@@ -27,15 +27,18 @@ We want to make sure the relevant data stays together. We don’t want StockType
 
 In order to convert to 2NF, we make new tables to eliminate partial dependencies.
 
-Table 1. Primary Key: UserID; Foreign Key, StockID.
+Table 1. Composite Key: UserID, StockID.
 
-
-![image](https://user-images.githubusercontent.com/110180090/182682142-da726722-d2f0-4c54-b7c6-bf497a4439ac.png)
-
+![image](https://user-images.githubusercontent.com/110180090/182850843-5e6f5150-b16f-45b5-87f3-b6d47d9c53a1.png)
 
 Table 2. Primary Key: StockID
 
 ![image](https://user-images.githubusercontent.com/110180090/182682206-8bad45a1-431d-4414-a754-3e2d6fe6818a.png)
+
+Table 3. Primary Key: UserID
+
+![image](https://user-images.githubusercontent.com/110180090/182850945-050de130-c633-439e-8af0-006a82e2e706.png)
+
 
 **Analysis**:
 Pros: Tables are narrower. Every column is functionally dependent on the primary key.
@@ -52,7 +55,10 @@ Now we have StockID -> StockName, StockID -> StockType -> StockTypeID which is a
 
 So we should decompose the table 2 in 2NF.
 
-Table 1 same as before.
+Table 1
+
+![image](https://user-images.githubusercontent.com/110180090/182850945-050de130-c633-439e-8af0-006a82e2e706.png)
+
 
 Table 2-1
 
@@ -66,6 +72,11 @@ Table 2-3
 
 ![image](https://user-images.githubusercontent.com/110180090/182682514-816429df-f589-4540-bff9-d3377567506d.png)
 
+Table 3
+
+![image](https://user-images.githubusercontent.com/110180090/182850843-5e6f5150-b16f-45b5-87f3-b6d47d9c53a1.png)
+
+
 **Analysis**:
 Pros: We eliminated the modification anomaly from 2NF.
 Cons: We have many tables and joins in between those tables, so we slow down the performance of the database.
@@ -75,39 +86,51 @@ Cons: We have many tables and joins in between those tables, so we slow down the
 
 **ER diagram**
 
-![Entity Relationship Diagram (1)](https://user-images.githubusercontent.com/110180090/182682775-f4abaff9-30b1-4181-bbcb-15dd2621fe52.jpg)
-
-To retrieve holding of UserID 3 
-SELECT SUM(Profit) FROM Orders WHERE UserID = 3
-
+![Entity Relationship Diagram (3)](https://user-images.githubusercontent.com/110180090/182854513-06c599b6-5135-4598-8ce9-615fe646aad8.jpg)
 
 ## Milestone 3
 
-Assume we are using the ER from milestone 2
 
-#### 1\. Net Volume
-\# Note, profit means either buying or selling, so it can be minus
-\# Assume StockID = ‘S100’, Day = ‘2022–08-04’
-SELECT SUM(ABS(Orders.Amount)) FROM Orders WHERE StockID == ‘S100’ AND Day == ‘2022-08-04’;
-
+#### 1\. Net Volume of a given stock on a given day
+```
+# Assume StockID = ‘S100’, Day = ‘2022–08-04’
+SELECT Orders.Volume FROM Orders WHERE StockID == ‘S100’ AND Day == ‘2022-08-04’;
+```
 
 #### 2\. Net gains/losses of one user on a given day
-\# UserID = U100, Day = ‘2022–08-04’
+````
+# UserID = U100, Day = ‘2022–08-04’
+# Sum of all transactions of one user on a given day
+# gains – orders.amount is positive, losses – orders.amount is negative
 SELECT SUM(Orders.Amount) FROM Orders WHERE UserID == ‘U100’ AND Day == ‘2022–08-04’;
-
+```
 #### 3\. Top 5 stocks with highest percentage growth last month
-I don't know
-
+```
+SELECT StockID, MAX((close - open)/open*100) AS growth \
+      from Orders \
+      WHERE Orders.day > now() - INTERVAL 30 day \
+      GROUP BY StockID \
+      ORDER BY growth LIMIT 5"
+```
 #### 4\. Average buying price for a stock in a users holdings
-\# Assume the stock we looking for is S100, userid is U100
-SELECT AVG(Orders.Amount) FROM Orders WHERE StockID = ‘S100’ and UserID = ‘U100’;
 
+```
+# Assume the stock we looking for is S100, userid is U100
+SELECT AVG(Holdings.HoldingAmount) FROM Holdings WHERE StockID = ‘S100’ and UserID = ‘U100’;
+```
 #### 5\. Net profit/loss per current holding of a user
 \# Because amount can be profit or loss — positive amount or negative amount
-SELECT SUM(Orders.Amount) FROM Orders WHERE UserID = ‘U100’;
-
+```
+SELECT SUM(Holdings.HoldnigAmount) FROM Holdings WHERE UserID = ‘U100’;
+```
 #### 6\. Top performing stock in a users portfolio in the previous month(percentage growth)
 
-
-
-
+```
+SELECT StockID, (close*volume) as market_capitalization
+FROM Orders
+WHERE Day = (
+              select MAX(Day) as last_day FROM Orders
+) and UserID == “U100”
+ORDER BY market_capitalization DESC
+LIMIT 1;
+```
