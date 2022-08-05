@@ -1,5 +1,6 @@
 use tu;
 
+DROP TABLE IF EXISTS ohlcv, market_day, orders, holdings, users, stocks, sectors;
 CREATE TABLE sectors(id INT NOT NULL,
           name VARCHAR(50) NOT NULL,
           description VARCHAR(200) NOT NULL,
@@ -23,6 +24,7 @@ CREATE TABLE users(id INT NOT NULL,
           available_funcs NUMERIC NOT NULL,
 	PRIMARY KEY (id)
 );
+
 
 CREATE TABLE holdings(user_id INT NOT NULL,
           stock_id INT NOT NULL,

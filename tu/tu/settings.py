@@ -48,7 +48,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "v1.disable_csrf.DisableCSRF",
+    #"v1.disable_csrf.DisableCSRF",
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
