@@ -20,9 +20,12 @@ CREATE TABLE stocks(id INT NOT NULL,
 CREATE TABLE users(id INT NOT NULL,
           name VARCHAR(50) NOT NULL,
           email VARCHAR(50) NOT NULL,
+	  password VARCHAR(200) NOT NULL,
           available_funds NUMERIC NOT NULL,
-          available_funcs NUMERIC NOT NULL,
-	PRIMARY KEY (id)
+          blocked_funds NUMERIC NOT NULL,
+	PRIMARY KEY (id),
+	UNIQUE (email),
+	UNIQUE (name)
 );
 
 
@@ -69,3 +72,4 @@ CREATE TABLE ohlcv(
 	FOREIGN KEY (market_id) REFERENCES market_day(id),
 	FOREIGN KEY (stock_id) REFERENCES stocks(id)
 );
+
