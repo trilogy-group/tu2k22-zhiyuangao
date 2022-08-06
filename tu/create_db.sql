@@ -4,7 +4,8 @@ DROP TABLE IF EXISTS ohlcv, market_day, orders, holdings, users, stocks, sectors
 CREATE TABLE sectors(id INT NOT NULL,
           name VARCHAR(50) NOT NULL,
           description VARCHAR(200) NOT NULL,
-  	PRIMARY KEY (id)
+  	PRIMARY KEY (id),
+	UNIQUE (name)
 );
 
 CREATE TABLE stocks(id INT NOT NULL,

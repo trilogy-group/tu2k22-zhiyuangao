@@ -1,6 +1,9 @@
 import requests
 import MySQLdb
 import secrets
+import json
+from rest_framework import status
+from rest_framework.response import Response
 
 db_host = "localhost"
 db_user = "sammy"
@@ -22,6 +25,7 @@ class Session:
             }
         self.token = token
 
+
 def connectDB():
     connect=MySQLdb.connect(host=db_host,password=password, user=db_user, db=db_name, port=port)
     print("Connected")
@@ -41,6 +45,8 @@ def register(email, password, name):
     c = db.cursor()
 
     c.execute("SELECT COUNT(*) FROM users;")
+    r = c.fetchall()
+    print(r)
     r = c.fetchall()[0][0]
     user_id = int(r) + 1
 
@@ -91,5 +97,62 @@ def profile(token):
     for k in data:
         data[k] = str(data[k])
     return data
+
+
+def sectorsGet():
+    db = get_connect()
+    c = db.cursor()
+
+    c.execute("SELECT * FROM sectors")
+    r = c.fetchall()
+    if len(r) == 0:
+        return {"sectors empty"}
+    id = r[0][0]
+    name = r[0][1]
+    description = r[0][2]
+    db.close()
+    return {'id':id, 'name':name, 'description':description}
+
+
+def sectorsPost(name, description):
+    db = get_connect()
+    c = db.cursor()
+    c.execute("SELECT COUNT(*) FROM sectors;")
+    r = c.fetchall()[0][0]
+    user_id = int(r) + 1
+
+    cmd = "INSERT INTO sectors \n\
+            VALUES (" + str(user_id) + \
+            ", \"" + name + "\"" +\
+            ", \"" + description + "\");"
+    #print(cmd)
+    c.execute(cmd)
+    #print(c.fetchall())
+    db.commit() 
+    db.close()
+
+    return {'id': user_id, 'name': name, 'description':description}
+
+
+def sectorsUpdate(id, name, description):
+    db = get_connect()
+    c = db.cursor()
+
+    c.execute("SELECT * FROM sectors WHERE id = "+str(id)+";")
+    r = c.fetchall()
+    print("select result", r)
+    if len(r) == 0:
+        return Response({'message':"No sector with id "+str(id)}, status.HTTP_406_NOT_ACCEPTABLE)
+    id = r[0][0]
+    name = r[0][1]
+    
+    cmd = "UPDATE sectors set description = \"" + \
+            description+"\" WHERE id = "+str(id) + \
+            " and name = \"" + name + "\";"
+    c.execute(cmd)
+    #print(c.fetchall())
+    db.commit() 
+    db.close()
+    return Response({'id':'ok'}, status=status.HTTP_204_NO_CONTENT)
 
 

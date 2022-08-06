@@ -45,3 +45,16 @@ print(r.json())
 r = requests.post('http://127.0.0.1:8080/api/v1/users/profile', {"token": "AIM9vfBai-tSnozCXoL5GiLkMuu2KtPTDIeYUSwkHtk"})
 print(r)
 print(r.json())
+
+
+# get sectors
+r = requests.get('http://127.0.0.1:8080/api/v1/sectors')
+print(r)
+print(r.json())
+
+# post sectors
+r = requests.post('http://127.0.0.1:8080/api/v1/sectors', {'name':'sectorname2', 'description':'description2'})
+print(r)
+print(r.json())
+
+

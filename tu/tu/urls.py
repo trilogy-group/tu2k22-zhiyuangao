@@ -25,6 +25,8 @@ urlpatterns = [
     path('api/v1/auth/login', api_views.login),
     path('api/v1/auth/logout', api_views.logout),
     path('api/v1/users/profile', api_views.profile),
+    path('api/v1/sectors', api_views.sectors),
+    path('api/v1/sectors/<int:id>', api_views.sectorsUpdate),
     path('api/', include(router.urls)),
 ]
 

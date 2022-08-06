@@ -95,3 +95,57 @@ def profile(request):
         print("Logout failed.")
         print(e)
         return Response('Profile access failed. Wrong token.', status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(['GET', 'POST'])
+def sectors(request):
+    if request.method == 'GET':
+        try:
+            res = bk.sectorsGet()
+            return Response(res, status=status.HTTP_200_OK)
+        except Exception as e:
+            print("GET sectors failed")
+            print(e)
+            return Response("GET sectors failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        r = str(request.body)[2:-1].split('&')
+        #print("sectors", r)
+        if 'name' not in str(request.body) or 'description' not in str(request.body):
+            return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
+        try:
+          dic = {}
+          for param in r:
+              dic[param.split('=')[0]] = param.split('=')[1]
+ 
+          des = dic['description']
+          name = dic['name']
+          res = bk.sectorsPost(description=des, name=name)
+          #print(res)
+          return Response(res, status=status.HTTP_201_CREATED)
+        except Exception as e:
+          print("Sector creation failed")
+          print(e)
+          return Response('Sector creation failed', status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(['PATCH'])
+def sectorsUpdate(request, id=None, *args, **kwargs):
+    if 'name' not in str(request.body) or 'description' not in str(request.body):
+            return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
+    try:
+        r = str(request.body)[2:-1].split('&')
+        dic = {}
+        for param in r:
+            dic[param.split('=')[0]] = param.split('=')[1]
+
+        des = dic['description']
+        name = dic['name']
+        print('sectors update', type(id))
+        res = bk.sectorsUpdate(int(id), name, des)
+        return res 
+    except Exception as e:
+        print("Sector update failed")
+        print(e)
+        return Response('Sector update failed', status=status.HTTP_401_UNAUTHORIZED)
+
+
