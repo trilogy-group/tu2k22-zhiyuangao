@@ -27,6 +27,8 @@ urlpatterns = [
     path('api/v1/users/profile', api_views.profile),
     path('api/v1/sectors', api_views.sectors),
     path('api/v1/sectors/<int:id>', api_views.sectorsUpdate),
+    path('api/v1/stocks', api_views.stocks),
+    path('api/v1/stocks/<int:id>', api_views.getStock),
     path('api/', include(router.urls)),
 ]
 

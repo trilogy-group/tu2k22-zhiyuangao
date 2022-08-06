@@ -156,3 +156,68 @@ def sectorsUpdate(id, name, description):
     return Response({'id':'ok'}, status=status.HTTP_204_NO_CONTENT)
 
 
+def stocks():
+    db = get_connect()
+    c = db.cursor()
+
+    c.execute("SELECT * FROM stocks;")
+    res = []
+    r = c.fetchall()
+    for stock in r:
+        #((1, 1, 'stock1', 100, 100, Decimal('200')), (2, 1, 'stock2', 100, 100, Decimal('200')))
+        id = int(stock[0])
+        sector_id = int(stock[1])
+        name = stock[2]
+        total_volume = int(stock[3])
+        unallocated = int(stock[4])
+        price = float(str(stock[5]).strip("Decimal(\')"))
+
+        data = {"id":id, "name":name, "total_volume":total_volume, "sector":sector_id, \
+                "unallocated":unallocated, "price":price}
+        res.append(data)
+        
+    #print(r)
+    return res
+
+
+def stocksCreate(name, price, sector_id, unallocated, total_volume):
+    db = get_connect()
+    c = db.cursor()
+
+    c.execute("SELECT COUNT(*) FROM users;")
+    r = c.fetchall()[0][0]
+    stock_id = int(r) + 1
+
+    cmd = "INSERT INTO stocks \n\
+            VALUES (" + str(stock_id) + \
+            ", \"" + sector_id + "\"" +\
+            ", \"" + name + "\"" + \
+            ", \"" + total_volume + "\"" + \
+            ", "+ unallocated + \
+            ", "+ price + ");"
+    #print(cmd)
+    c.execute(cmd)
+    #print(c.fetchall())
+    db.commit()
+    db.close()
+
+    return {"id":user_id}
+
+
+def getStock(id):
+    db = get_connect()
+    c = db.cursor()
+
+    c.execute("SELECT * FROM stocks WHERE id = "+str(id)+';')
+    r = c.fetchall()
+    if len(r) == 0:
+        return {}
+    data = r[0]
+    print(data)
+    sector_id = data[1]
+    name = data[2]
+    total_volume = data[3]
+    unallocated = data[4]
+    price = str(str(data[5]).strip('Decimal(\')'))
+    return {'id': id, 'name': name, 'price': price, 'sector': sector_id, 'unallocated': unallocated, \
+            'price': price} 

@@ -57,4 +57,18 @@ r = requests.post('http://127.0.0.1:8080/api/v1/sectors', {'name':'sectorname2',
 print(r)
 print(r.json())
 
+# patch a sector
+r = requests.patch('http://127.0.0.1:8080/api/v1/sectors/1', {'name':'sectorname2', 'description':'description2'})
+print(r)
+print(r.json())
+
+# list all stocks
+r = requests.get('http://127.0.0.1:8080/api/v1/stocks')
+print(r)
+print(r.json())
+
+# create all stocks
+r = requests.post('http://127.0.0.1:8080/api/v1/stocks', {  "name": "string", "price": "100.00", "sector": 0, "unallocated": 0, "total_volume": 0})
+print(r)
+print(r.json())
 

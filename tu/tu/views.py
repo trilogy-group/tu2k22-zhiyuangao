@@ -107,7 +107,7 @@ def sectors(request):
             print("GET sectors failed")
             print(e)
             return Response("GET sectors failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    else:
+    elif request.method == 'POST':
         r = str(request.body)[2:-1].split('&')
         #print("sectors", r)
         if 'name' not in str(request.body) or 'description' not in str(request.body):
@@ -148,4 +148,36 @@ def sectorsUpdate(request, id=None, *args, **kwargs):
         print(e)
         return Response('Sector update failed', status=status.HTTP_401_UNAUTHORIZED)
 
+
+@api_view(['GET', 'POST'])
+def stocks(request):
+    if request.method == 'GET':
+        try:
+            res = bk.stocks()
+            return Response(res, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response("Failed to get stocks", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    elif request.method == 'POST':
+        try:
+            r = str(request.body)[2:-1].split('&')
+            dic = {}
+            for param in r:
+                dic[param.split('=')[0]] = param.split('=')[1]
+            res = bk.stocksCreate(name=dic['name'], price=dic['price'], sector_id=dic['sector'], \
+                    unallocated=dic['unallocated'], total_volume=dic['total_volume'])
+            return Response(res, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(e)
+            return Response("Failed to update stocks", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def getStock(request, id=None):
+    try:
+        res = bk.getStock(int(id))
+        return Response(res, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response("Failed to get stock by id "+str(id), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
