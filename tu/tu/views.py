@@ -61,15 +61,9 @@ def logout(request):
     r = str(request.body)[2:-1].split('&')
     print("logout",r)
 
-    if 'token' not in str(request.body):
-        return Response("token not found", status=status.HTTP_400_BAD_REQUEST)
-
     try:
-        dic = {}
-        for param in r:
-            dic[param.split('=')[0]] = param.split('=')[1]
- 
-        return Response(bk.logout(token=dic['token']), status=status.HTTP_200_OK)
+        token = request.META.get('HTTP_AUTHORIZATION')
+        return bk.logout(token)
     except Exception as e:
         print("Logout failed.")
         print(e)
@@ -81,15 +75,12 @@ def profile(request):
     r = str(request.body)[2:-1].split('&')
     print("profile",r)
 
-    if 'token' not in str(request.body):
+    token = request.META.get('HTTP_AUTHORIZATION')
+    if token == '':
         return Response("token not found", status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        dic = {}
-        for param in r:
-            dic[param.split('=')[0]] = param.split('=')[1]
- 
-        res = bk.profile(dic['token'])
+        res = bk.profile(token)
         return Response(res, status=status.HTTP_200_OK)
     except Exception as e:
         print("Logout failed.")
@@ -100,13 +91,15 @@ def profile(request):
 @api_view(['GET', 'POST'])
 def sectors(request):
     if request.method == 'GET':
+        print('sectors get!')
         try:
-            res = bk.sectorsGet()
-            return Response(res, status=status.HTTP_200_OK)
+            #token = request.META.get('HTTP_AUTHORIZATION')
+            return bk.sectorsGet()
         except Exception as e:
             print("GET sectors failed")
             print(e)
             return Response("GET sectors failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     elif request.method == 'POST':
         r = str(request.body)[2:-1].split('&')
         #print("sectors", r)
@@ -180,4 +173,30 @@ def getStock(request, id=None):
     except Exception as e:
         print(e)
         return Response("Failed to get stock by id "+str(id), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET', 'POST'])
+def orders(request):
+    if request.method == "GET":
+        # List all orders
+        try:
+            res = bk.getOrders()
+            Response(res, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)
+            return Response("Failed to get order", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        try:
+            r = str(request.body)[2:-1].split('&')
+            dic = {}
+            for param in r:
+                dic[param.split('=')[0]] = param.split('=')[1]
+            res = bk.ordersCreate(stock=dic['stock_id'], type=dic['type'], \
+                    bid_price=dic['bid_price'], \
+                    bid_volume=dic['bid_volume'])
+        except Exception as e:
+            print(e)
+            return Response("Failed to create order", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
+
 

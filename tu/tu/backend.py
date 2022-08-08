@@ -1,7 +1,7 @@
 import requests
 import MySQLdb
 import secrets
-import json
+import json, time
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -46,9 +46,12 @@ def register(email, password, name):
 
     c.execute("SELECT COUNT(*) FROM users;")
     r = c.fetchall()
-    print(r)
-    r = c.fetchall()[0][0]
+    if len(r) == 0:
+        user_id = 0
+    else:
+        r = r[0][0]
     user_id = int(r) + 1
+    # TODO: If email identical
 
     cmd = "INSERT INTO users \n\
             VALUES (" + str(user_id) + \
@@ -88,30 +91,38 @@ def login(name, password):
 
 def logout(token):
     del login_session[token]
-    return {"logout":"success"}
+    return Response('Logout ok.', status=status.HTTP_204_NO_CONTENT)
 
 
 def profile(token):
     print(login_session, token)
     data = login_session[token].data
+    print(data)
     for k in data:
         data[k] = str(data[k])
     return data
 
 
 def sectorsGet():
+    #try: 
+    #    login_session[token]
+    #except Exception as e:
+    #    print(e)
+    #    return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
     db = get_connect()
     c = db.cursor()
 
     c.execute("SELECT * FROM sectors")
     r = c.fetchall()
     if len(r) == 0:
-        return {"sectors empty"}
+        db.close()
+        return Response({}, status=status.HTTP_200_OK)
     id = r[0][0]
     name = r[0][1]
     description = r[0][2]
     db.close()
-    return {'id':id, 'name':name, 'description':description}
+    return Response({'id':id, 'name':name, 'description':description}, \
+            status=status.HTTP_200_OK)
 
 
 def sectorsPost(name, description):
@@ -219,5 +230,53 @@ def getStock(id):
     total_volume = data[3]
     unallocated = data[4]
     price = str(str(data[5]).strip('Decimal(\')'))
+
+    db.close()
+
     return {'id': id, 'name': name, 'price': price, 'sector': sector_id, 'unallocated': unallocated, \
             'price': price} 
+
+def getOrders():
+    def order_trim(s):
+        return str(str(s).strip('Decimal(\')'))
+    db = get_connect()
+    c = db.cursor()
+
+    c.execute("SELECT * FROM orders;")
+    r = c.fetchall()
+    if len(r) == 0:
+        return {}
+    data = r[0]
+    print(data)
+
+    id = data[0]
+    user_id = data[1]
+    stock_id = data[2]
+    type_ = data[3]
+    create_at = data[4]
+    updated_at = data[5]
+    status = data[6]
+    bid_price = data[7]
+    bld_volume = data[8]
+    executed_volume = data[9]
+
+    db.close()
+
+    return { 'id': id, 'stock': stock_id, 'user': user_id, \
+            'type': type_, 'bid_price': bid_price, \
+            'bid_volume': bld_volume, \
+            'executed_volume': executed_volume, \
+            'created_on': create_at, \
+            'updated_on': updated_at }
+
+
+def ordersCreate(stock, type, bid_price, bid_volume):
+    # Check Stock ID availability
+
+    # Check current available volume, alter if possible
+
+    # generate response
+    #created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    #updated_at = created_at
+    #executed_volume = bid_volume
+    return {}
