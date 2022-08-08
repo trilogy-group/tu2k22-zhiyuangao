@@ -1,7 +1,8 @@
 import requests
 import time
 
-url = "https://8080-trilogygrou-tu2k22zhiyu-sq8b22pxndn.ws.legacy.devspaces.com/"
+#url = "https://8080-trilogygrou-tu2k22zhiyu-sq8b22pxndn.ws.legacy.devspaces.com/"
+url = "http://localhost:8080/"
 
 def signup(name='user1'):
     email = name+"@example.com"
@@ -37,7 +38,7 @@ def logout(token):
    headers = {
         "Content-Type": "application/json",
         "Authorization": token
-    }
+   }
    r = requests.post(url+'api/v1/auth/logout', headers=headers)
    print(r)
    print('Logged out!')
@@ -51,6 +52,24 @@ def listSectors():
     print('listed sectors!')
 
 
+def postSector(token):
+    # create a new sector
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": token
+    }
+    r = requests.post(url+'api/v1/sectors', {'name':'sectorname2', 'description':'description2'}, headers=headers)
+    print(r)
+    print(r.json())
+
+
+def patchSector(token):
+    # patch a sector
+    r = requests.patch('http://127.0.0.1:8080/api/v1/sectors/1', {'name':'sectorname2', 'description':'description2'})
+    print(r)
+    print(r.json())
+
+
 if __name__ == '__main__':
     signup('user1')
     signup('user2')
@@ -62,12 +81,13 @@ if __name__ == '__main__':
     profile(token2)
     
     logout(token1)
-    logout(token2)
     
     listSectors()
     listSectors()
 
+    postSector(token2)
 
+    logout(token2)
 
 
 # dup username
@@ -96,16 +116,6 @@ r = requests.post('http://127.0.0.1:8080/api/v1/auth/login', {"password": "strin
 print(r)
 print(r.json())
 
-
-# post sectors
-r = requests.post('http://127.0.0.1:8080/api/v1/sectors', {'name':'sectorname2', 'description':'description2'})
-print(r)
-print(r.json())
-
-# patch a sector
-r = requests.patch('http://127.0.0.1:8080/api/v1/sectors/1', {'name':'sectorname2', 'description':'description2'})
-print(r)
-print(r.json())
 
 # list all stocks
 r = requests.get('http://127.0.0.1:8080/api/v1/stocks')

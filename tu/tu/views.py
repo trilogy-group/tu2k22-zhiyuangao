@@ -106,15 +106,19 @@ def sectors(request):
         if 'name' not in str(request.body) or 'description' not in str(request.body):
             return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
         try:
+            token = request.META.get('HTTP_AUTHORIZATION')
+        except Exception as e:
+            return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+        try:
           dic = {}
           for param in r:
               dic[param.split('=')[0]] = param.split('=')[1]
  
           des = dic['description']
           name = dic['name']
-          res = bk.sectorsPost(description=des, name=name)
+          res = bk.sectorsPost(description=des, name=name, token=token)
           #print(res)
-          return Response(res, status=status.HTTP_201_CREATED)
+          return res #Response(res, status=status.HTTP_201_CREATED)
         except Exception as e:
           print("Sector creation failed")
           print(e)
@@ -126,6 +130,11 @@ def sectorsUpdate(request, id=None, *args, **kwargs):
     if 'name' not in str(request.body) or 'description' not in str(request.body):
             return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
     try:
+        token = request.META.get('HTTP_AUTHORIZATION')
+    except Exception as e:
+        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+ 
+    try:
         r = str(request.body)[2:-1].split('&')
         dic = {}
         for param in r:
@@ -134,7 +143,7 @@ def sectorsUpdate(request, id=None, *args, **kwargs):
         des = dic['description']
         name = dic['name']
         print('sectors update', type(id))
-        res = bk.sectorsUpdate(int(id), name, des)
+        res = bk.sectorsUpdate(int(id), name, des, token=token)
         return res 
     except Exception as e:
         print("Sector update failed")
@@ -153,13 +162,18 @@ def stocks(request):
             return Response("Failed to get stocks", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     elif request.method == 'POST':
         try:
+            token = request.META.get('HTTP_AUTHORIZATION')
+        except Exception as e:
+            return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+ 
+        try:
             r = str(request.body)[2:-1].split('&')
             dic = {}
             for param in r:
                 dic[param.split('=')[0]] = param.split('=')[1]
             res = bk.stocksCreate(name=dic['name'], price=dic['price'], sector_id=dic['sector'], \
-                    unallocated=dic['unallocated'], total_volume=dic['total_volume'])
-            return Response(res, status=status.HTTP_201_CREATED)
+                    unallocated=dic['unallocated'], total_volume=dic['total_volume'], token=token)
+            return res #Response(res, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)
             return Response("Failed to update stocks", status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -96,6 +96,7 @@ def logout(token):
 
 def profile(token):
     print(login_session, token)
+    # authenticate
     data = login_session[token].data
     print(data)
     for k in data:
@@ -125,7 +126,13 @@ def sectorsGet():
             status=status.HTTP_200_OK)
 
 
-def sectorsPost(name, description):
+def sectorsPost(name, description, token):
+    try: 
+        login_session[token]
+    except Exception as e:
+        print(e)
+        return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
+ 
     db = get_connect()
     c = db.cursor()
     c.execute("SELECT COUNT(*) FROM sectors;")
@@ -142,10 +149,16 @@ def sectorsPost(name, description):
     db.commit() 
     db.close()
 
-    return {'id': user_id, 'name': name, 'description':description}
+    return Response({'id': user_id, 'name': name, 'description':description}, status=status.HTTP_201_CREATED)
 
 
-def sectorsUpdate(id, name, description):
+def sectorsUpdate(id, name, description, token):
+    try: 
+        login_session[token]
+    except Exception as e:
+        print(e)
+        return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
+ 
     db = get_connect()
     c = db.cursor()
 
@@ -192,6 +205,12 @@ def stocks():
 
 
 def stocksCreate(name, price, sector_id, unallocated, total_volume):
+    try: 
+        login_session[token]
+    except Exception as e:
+        print(e)
+        return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
+ 
     db = get_connect()
     c = db.cursor()
 
@@ -212,7 +231,7 @@ def stocksCreate(name, price, sector_id, unallocated, total_volume):
     db.commit()
     db.close()
 
-    return {"id":user_id}
+    return Response({"id":user_id}, status=status.HTTP_201_CREATED)
 
 
 def getStock(id):
