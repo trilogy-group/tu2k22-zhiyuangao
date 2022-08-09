@@ -24,6 +24,8 @@ class Session:
                 'blocked_funds': int(str(db_entry_in_users[5]).strip('Decimal(\')')) \
             }
         self.token = token
+    def __str__(self):
+        print(self.token, self.data)
 
 
 def connectDB():
@@ -50,7 +52,7 @@ def register(email, password, name):
         user_id = 0
     else:
         r = r[0][0]
-    user_id = int(r) + 1
+    user_id = int(r) 
     # TODO: If email identical
 
     cmd = "INSERT INTO users \n\
@@ -137,10 +139,10 @@ def sectorsPost(name, description, token):
     c = db.cursor()
     c.execute("SELECT COUNT(*) FROM sectors;")
     r = c.fetchall()[0][0]
-    user_id = int(r) + 1
+    sector_id = int(r)
 
     cmd = "INSERT INTO sectors \n\
-            VALUES (" + str(user_id) + \
+            VALUES (" + str(sector_id) + \
             ", \"" + name + "\"" +\
             ", \"" + description + "\");"
     #print(cmd)
@@ -149,7 +151,7 @@ def sectorsPost(name, description, token):
     db.commit() 
     db.close()
 
-    return Response({'id': user_id, 'name': name, 'description':description}, status=status.HTTP_201_CREATED)
+    return Response({'id': sector_id, 'name': name, 'description':description}, status=status.HTTP_201_CREATED)
 
 
 def sectorsUpdate(id, name, description, token):
@@ -204,7 +206,9 @@ def stocks():
     return res
 
 
-def stocksCreate(name, price, sector_id, unallocated, total_volume):
+def stocksCreate(name, price, sector_id, unallocated, total_volume, token):
+    print(stocksCreate)
+    print(login_session)
     try: 
         login_session[token]
     except Exception as e:
@@ -214,9 +218,9 @@ def stocksCreate(name, price, sector_id, unallocated, total_volume):
     db = get_connect()
     c = db.cursor()
 
-    c.execute("SELECT COUNT(*) FROM users;")
+    c.execute("SELECT COUNT(*) FROM stocks;")
     r = c.fetchall()[0][0]
-    stock_id = int(r) + 1
+    stock_id = int(r)
 
     cmd = "INSERT INTO stocks \n\
             VALUES (" + str(stock_id) + \
@@ -231,10 +235,21 @@ def stocksCreate(name, price, sector_id, unallocated, total_volume):
     db.commit()
     db.close()
 
-    return Response({"id":user_id}, status=status.HTTP_201_CREATED)
+    return Response({"id": int(stock_id), \
+      "name": name, \
+      "price": price, "sector": int(sector_id), \
+      "unallocated": int(unallocated), \
+      "total_volume": int(total_volume) \
+      }, status=status.HTTP_201_CREATED)
 
 
-def getStock(id):
+def getStock(id, token):
+    try: 
+        login_session[token]
+    except Exception as e:
+        print(e)
+        return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
+ 
     db = get_connect()
     c = db.cursor()
 
@@ -252,50 +267,122 @@ def getStock(id):
 
     db.close()
 
-    return {'id': id, 'name': name, 'price': price, 'sector': sector_id, 'unallocated': unallocated, \
-            'price': price} 
+    return Response({'id': id, 'name': name, 'price': price, 'sector': sector_id, 'unallocated': unallocated, \
+            'price': price}, status=status.HTTP_200_OK)
 
-def getOrders():
-    def order_trim(s):
-        return str(str(s).strip('Decimal(\')'))
+
+def getOrders(token):
+    try: 
+        login_session[token]
+    except Exception as e:
+        print(e)
+        return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
+ 
     db = get_connect()
     c = db.cursor()
 
     c.execute("SELECT * FROM orders;")
     r = c.fetchall()
+
     if len(r) == 0:
-        return {}
-    data = r[0]
-    print(data)
+        return Response({}, status=status.HTTP_200_OK)
 
-    id = data[0]
-    user_id = data[1]
-    stock_id = data[2]
-    type_ = data[3]
-    create_at = data[4]
-    updated_at = data[5]
-    status = data[6]
-    bid_price = data[7]
-    bld_volume = data[8]
-    executed_volume = data[9]
-
-    db.close()
-
-    return { 'id': id, 'stock': stock_id, 'user': user_id, \
+    result = []
+    for data in r:
+        #print(data)
+        id = data[0]
+        user_id = data[1]
+        stock_id = data[2]
+        type_ = data[3]
+        create_at = data[4]
+        updated_at = data[5]
+        order_status = data[6]
+        bid_price = data[7]
+        bld_volume = data[8]
+        executed_volume = data[9]
+        result.append({ 'id': id, 'stock': stock_id, 'user': user_id, \
             'type': type_, 'bid_price': bid_price, \
             'bid_volume': bld_volume, \
             'executed_volume': executed_volume, \
+            'status': order_status, \
             'created_on': create_at, \
-            'updated_on': updated_at }
+            'updated_on': updated_at })
 
 
-def ordersCreate(stock, type, bid_price, bid_volume):
+    print(result)
+    return Response(result, status=status.HTTP_200_OK)
+
+
+def ordersCreate(stock, type, bid_price, bid_volume, token):
+    # Authenticate token
+    try: 
+        user_session = login_session[token]
+    except Exception as e:
+        print(e)
+        return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
+ 
+    user_id = user_session.data['id']
+
     # Check Stock ID availability
+    db = get_connect()
+    c = db.cursor()
 
-    # Check current available volume, alter if possible
+    c.execute("SELECT * FROM stocks;")
+    r = c.fetchall()
+    flag = False
+    for db_stock_entry in r:
+        if int(db_stock_entry[0]) == int(stock):
+            flag = True
+            break
+    if flag == False:
+        return Response('Invalid Stock ID', status=status.HTTP_400_BAD_REQUEST)
 
-    # generate response
+    # Check current available funds, block if enough to purchase
+    if type == 'BUY':
+        c.execute("SELECT available_funds FROM users where id =" + str(user_id)+";")
+        r = c.fetchall()
+        if len(r) == 0:
+            # this shouldn't happen because we already had the token -- aka user added
+            return Response('User does not exist', status=status.HTTP_404_NOT_FOUND)
+        available_funds = float(r[0][0])
+        if available_funds < float(bid_price):
+            return Response('Insufficient funds', status=status.HTTP_401_UNAUTHORIZED)
+    elif type == 'SELL':
+        return Response('TODO', status=status.HTTP_404_NOT_FOUND)
+    else:
+        return Response('Unknow order type', status=status.HTTP_400_BAD_REQUEST)
+
+
+    # Find order id
+    c.execute("SELECT COUNT(*) FROM orders;")
+    r = c.fetchall()
+    if len(r) == 0:
+        order_id = 0
+    else:
+        r = r[0][0]
+    order_id = int(r)
+    
+    # Generate response
     #created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ")
-    #updated_at = created_at
-    #executed_volume = bid_volume
-    return {}
+    created_at = time.strftime('%Y-%m-%d %H:%M:%S')
+    updated_at = created_at
+    executed_volume = bid_volume
+    order_status = 'COMPLETED' # TODO Double check order status
+    cmd = "INSERT INTO orders VALUES(" + str(order_id) + \
+            ", " + user_id + \
+            ", " + str(stock) + \
+            ", \"" + type + "\""+\
+            ", \"" + created_at + "\""+\
+            ", \"" + updated_at + "\""+\
+            ", \"" + order_status + "\""+\
+            ", " + bid_price + \
+            ", " + bid_volume + \
+            ", " + executed_volume + \
+            ");"
+    print(cmd)
+    c.execute(cmd)
+    r = c.fetchall()
+    print('create order insert into db',r)
+    db.commit()
+    db.close()
+    return Response({'Success'}, status=status.HTTP_200_OK)

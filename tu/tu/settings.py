@@ -26,6 +26,7 @@ SECRET_KEY = '&b1gwxt+4_qlpy-w*&1wio5=(h4@)15o7!gunq%3(5++-6-t6n'
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
+SITE_URL='http://127.0.0.1:8080'
 
 
 # Application definition

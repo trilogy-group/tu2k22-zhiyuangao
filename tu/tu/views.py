@@ -75,10 +75,13 @@ def profile(request):
     r = str(request.body)[2:-1].split('&')
     print("profile",r)
 
-    token = request.META.get('HTTP_AUTHORIZATION')
-    if token == '':
-        return Response("token not found", status=status.HTTP_400_BAD_REQUEST)
-
+    try:
+        token = request.META.get('HTTP_AUTHORIZATION')
+        if token == None:
+            raise Exception
+    except Exception as e:
+            return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+ 
     try:
         res = bk.profile(token)
         return Response(res, status=status.HTTP_200_OK)
@@ -107,8 +110,11 @@ def sectors(request):
             return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
         try:
             token = request.META.get('HTTP_AUTHORIZATION')
+            if token == None:
+                raise Exception
         except Exception as e:
             return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+ 
         try:
           dic = {}
           for param in r:
@@ -131,8 +137,10 @@ def sectorsUpdate(request, id=None, *args, **kwargs):
             return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
     try:
         token = request.META.get('HTTP_AUTHORIZATION')
+        if token == None:
+            raise Exception
     except Exception as e:
-        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+            return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
  
     try:
         r = str(request.body)[2:-1].split('&')
@@ -154,6 +162,7 @@ def sectorsUpdate(request, id=None, *args, **kwargs):
 @api_view(['GET', 'POST'])
 def stocks(request):
     if request.method == 'GET':
+        print('get stocks')
         try:
             res = bk.stocks()
             return Response(res, status=status.HTTP_200_OK)
@@ -161,8 +170,11 @@ def stocks(request):
             print(e)
             return Response("Failed to get stocks", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     elif request.method == 'POST':
+        print('create stocks')
         try:
             token = request.META.get('HTTP_AUTHORIZATION')
+            if token == None:
+                raise Exception
         except Exception as e:
             return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
  
@@ -182,8 +194,15 @@ def stocks(request):
 @api_view(['GET'])
 def getStock(request, id=None):
     try:
-        res = bk.getStock(int(id))
-        return Response(res, status=status.HTTP_200_OK)
+        token = request.META.get('HTTP_AUTHORIZATION')
+        if token == None:
+            raise Exception
+    except Exception as e:
+        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+ 
+    try:
+        res = bk.getStock(int(id), token)
+        return res
     except Exception as e:
         print(e)
         return Response("Failed to get stock by id "+str(id), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -191,15 +210,25 @@ def getStock(request, id=None):
 
 @api_view(['GET', 'POST'])
 def orders(request):
+    try:
+        token = request.META.get('HTTP_AUTHORIZATION')
+        if token == None:
+            raise Exception
+    except Exception as e:
+        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+ 
     if request.method == "GET":
         # List all orders
         try:
-            res = bk.getOrders()
-            Response(res, status=status.HTTP_200_OK)
+            res = bk.getOrders(token)
+            return res
         except Exception as e:
             print(e)
             return Response("Failed to get order", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
+        token = request.META.get('HTTP_AUTHORIZATION')
+        if token == '':
+            return Response("token not found", status=status.HTTP_400_BAD_REQUEST)
         try:
             r = str(request.body)[2:-1].split('&')
             dic = {}
@@ -207,7 +236,8 @@ def orders(request):
                 dic[param.split('=')[0]] = param.split('=')[1]
             res = bk.ordersCreate(stock=dic['stock_id'], type=dic['type'], \
                     bid_price=dic['bid_price'], \
-                    bid_volume=dic['bid_volume'])
+                    bid_volume=dic['bid_volume'], token=token)
+            return res
         except Exception as e:
             print(e)
             return Response("Failed to create order", status=status.HTTP_500_INTERNAL_SERVER_ERROR)

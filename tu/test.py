@@ -65,27 +65,81 @@ def postSector(token):
 
 def patchSector(token):
     # patch a sector
-    r = requests.patch('http://127.0.0.1:8080/api/v1/sectors/1', {'name':'sectorname2', 'description':'description2'})
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": token
+    }
+    r = requests.patch('http://127.0.0.1:8080/api/v1/sectors/1', {'name':'sectorname2', 'description':'description2'}, headers=headers)
     print(r)
     print(r.json())
 
 
+def listStocks():
+    # list all stocks
+    r = requests.get('http://127.0.0.1:8080/api/v1/stocks')
+    print(r)
+    print(r.json())
+    print('Listed stocks!')
+
+
+def createStocks(token):
+    # create stocks
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": token
+    }
+    r = requests.post('http://127.0.0.1:8080/api/v1/stocks', {  "name": "string", "price": "100.00", "sector": 0, "unallocated": 0, "total_volume": 0}, headers=headers)
+    print(r)
+    print(r.json())
+    print('Created stocks')
+
+
+# Get a stock by id
+#r = requests.get('http://127.0.0.1:8080/api/v1/stocks/1')
+
+# List all Orders
+def listOrders(token):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": token
+    }
+    r = requests.get('http://127.0.0.1:8080/api/v1/orders', headers=headers)
+    print(r)
+    print(r.json())
+    print('Listed orders')
+
+
+def createOrders(token):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": token
+    }
+    r = requests.post('http://127.0.0.1:8080/api/v1/orders', { "stock_id": 1, 'type': "BUY", "bid_price": 10, "bid_volume": 5}, headers=headers)
+    print(r)
+    print(r.json())
+    print('Created orders')
+
+
 if __name__ == '__main__':
-    signup('user1')
+    #signup('user1')
     signup('user2')
 
-    token1 = login('user1')
+    #token1 = login('user1')
     token2 = login('user2')
-    profile(token1)
-    profile(token1)
+    #profile(token1)
+    #profile(token1)
     profile(token2)
     
-    logout(token1)
+    #logout(token1)
     
-    listSectors()
-    listSectors()
+    #listSectors()
+    #listSectors()
 
-    postSector(token2)
+    #postSector(token2)
+    #createStocks(token2)
+    listOrders(token2)
+    createOrders(token2)
+    listOrders(token2)
 
     logout(token2)
 
@@ -117,19 +171,4 @@ print(r)
 print(r.json())
 
 
-# list all stocks
-r = requests.get('http://127.0.0.1:8080/api/v1/stocks')
-print(r)
-print(r.json())
-
-# create all stocks
-r = requests.post('http://127.0.0.1:8080/api/v1/stocks', {  "name": "string", "price": "100.00", "sector": 0, "unallocated": 0, "total_volume": 0})
-print(r)
-print(r.json())
-
-
-# Get a stock by id
-r = requests.get('http://127.0.0.1:8080/api/v1/stocks/1')
-
-# List all Orders
 """
