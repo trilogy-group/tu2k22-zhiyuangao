@@ -120,7 +120,19 @@ def createOrders(token):
     print('Created orders')
 
 
+def signupcase3():
+    name = 'A'
+    email = "BB@A.com"
+    # 1. post to sign up a user
+    r = requests.post(url+'api/v1/auth/signup/', {"email": email, "name":name, "password": "pass@123"})
+    print(r)
+    print(r.json())
+    print('user '+name+' signed up')
+
+
 if __name__ == '__main__':
+    signupcase3()
+    """
     #signup('user1')
     signup('user2')
 
@@ -142,6 +154,7 @@ if __name__ == '__main__':
     listOrders(token2)
 
     logout(token2)
+    """
 
 
 # dup username

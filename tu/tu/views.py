@@ -4,19 +4,25 @@ from rest_framework import status
 from . import backend as bk
 import time
 from rest_framework.views import APIView
+import logging
 
 @api_view(['POST'])
 def register(request):
+    logging.debug('-- sign up new user --')
+    logging.debug(request.body)
     r = str(request.body)[2:-1].split('&')
-    print('register',r)
+    logging.debug('parsed request')
+    logging.debug(r)
 
     if 'email' not in str(request.body) or 'password' not in str(request.body) \
             or 'name' not in str(request.body):
         return Response("email, password or name not found", status=status.HTTP_400_BAD_REQUEST)
+    logging.debug('parameters are correct')
     try:
       dic = {}
       for param in r:
           dic[param.split('=')[0]] = param.split('=')[1]
+      logging.debug(dic)
  
       # assume there are no = in names
       # assume there are no = in password
@@ -25,7 +31,7 @@ def register(request):
       pw = dic['password']
       name = dic['name']
       res = bk.register(email, pw, name)
-      print(res)
+      logging.debug(res)
       return Response(res, status=status.HTTP_201_CREATED)
     except Exception as e:
       print("User sign-up failed")

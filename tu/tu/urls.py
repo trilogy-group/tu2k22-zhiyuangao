@@ -21,15 +21,15 @@ from . import views as api_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/v1/auth/signup', api_views.register),
-    path('api/v1/auth/login', api_views.login),
-    path('api/v1/auth/logout', api_views.logout),
-    path('api/v1/users/profile', api_views.profile),
-    path('api/v1/sectors', api_views.sectors),
-    path('api/v1/sectors/<int:id>', api_views.sectorsUpdate),
-    path('api/v1/stocks', api_views.stocks),
-    path('api/v1/stocks/<int:id>', api_views.getStock),
-    path('api/v1/orders', api_views.orders),
+    path('api/v1/auth/signup/', api_views.register),
+    path('api/v1/auth/login/', api_views.login),
+    path('api/v1/auth/logout/', api_views.logout),
+    path('api/v1/users/profile/', api_views.profile),
+    path('api/v1/sectors/', api_views.sectors),
+    path('api/v1/sectors/<int:id>/', api_views.sectorsUpdate),
+    path('api/v1/stocks/', api_views.stocks),
+    path('api/v1/stocks/<int:id>/', api_views.getStock),
+    path('api/v1/orders/', api_views.orders),
     path('api/', include(router.urls)),
 ]
 
