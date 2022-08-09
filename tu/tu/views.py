@@ -4,15 +4,18 @@ from rest_framework import status
 from . import backend as bk
 import time
 from rest_framework.views import APIView
-import logging
+import logging, json
 
 @api_view(['POST'])
 def register(request):
-    logging.debug('-- sign up new user --')
+    logging.getLogger().setLevel(logging.DEBUG)
+    logging.debug('\n-- sign up new user --')
     logging.debug(request.body)
-    r = str(request.body)[2:-1].split('&')
+    logging.debug(str(request.body)[1:])
+    s = str(request.body)[3:-2]#.strip('{}')
+    r = s.replace(' ', '').replace("\"", "").split(',')
     logging.debug('parsed request')
-    logging.debug(r)
+    logging.info(r)
 
     if 'email' not in str(request.body) or 'password' not in str(request.body) \
             or 'name' not in str(request.body):
@@ -21,7 +24,7 @@ def register(request):
     try:
       dic = {}
       for param in r:
-          dic[param.split('=')[0]] = param.split('=')[1]
+          dic[param.split(':')[0]] = param.split(':')[1]
       logging.debug(dic)
  
       # assume there are no = in names
@@ -41,21 +44,25 @@ def register(request):
 
 @api_view(['POST'])
 def login(request):
-    r = str(request.body)[2:-1].split('&')
-    print("login",r)
+    logging.debug(request.body)
+    s = str(request.body)[3:-2]#.strip('{}')
+    r = s.replace(' ', '').replace("\"", "").split(',')
+ 
+    logging.info("login")
+    logging.info(str(r))
 
-    if 'username' not in str(request.body) or 'password' not in str(request.body):
-        return Response("username or password not found", status=status.HTTP_400_BAD_REQUEST)
+    if 'email' not in str(request.body) or 'password' not in str(request.body):
+        return Response("email or password not found", status=status.HTTP_400_BAD_REQUEST)
 
     try:
         dic = {}
         for param in r:
-            dic[param.split('=')[0]] = param.split('=')[1]
-        res = bk.login(dic['username'], dic['password'])
+            dic[param.split(':')[0]] = param.split(':')[1]
+        res = bk.login(dic['email'], dic['password'])
         if res[0] == True:
             return Response(res[1], status=status.HTTP_200_OK)
         else:
-            return Response("Wrong username or password", status=status.HTTP_401_UNAUTHORIZED)
+            return Response("Wrong username or password", status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         print("Login failed.")
         print(e)
@@ -64,13 +71,12 @@ def login(request):
 
 @api_view(['POST'])
 def logout(request):
-    r = str(request.body)[2:-1].split('&')
-    print("logout",r)
-
     try:
-        token = request.META.get('HTTP_AUTHORIZATION')
+        logging.debug('Send log out request to backend')
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
         return bk.logout(token)
     except Exception as e:
+        logging.debug('token request failed       ')
         print("Logout failed.")
         print(e)
         return Response('Logout failed. Wrong token.', status=status.HTTP_401_UNAUTHORIZED)

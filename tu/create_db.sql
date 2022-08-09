@@ -25,8 +25,7 @@ CREATE TABLE users(id INT NOT NULL,
           available_funds NUMERIC NOT NULL,
           blocked_funds NUMERIC NOT NULL,
 	PRIMARY KEY (id),
-	UNIQUE (email),
-	UNIQUE (name)
+	UNIQUE (email)
 );
 
 
