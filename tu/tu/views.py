@@ -13,7 +13,8 @@ def register(request):
     logging.debug(request.body)
     logging.debug(str(request.body)[1:])
     s = str(request.body)[3:-2]#.strip('{}')
-    r = s.replace(' ', '').replace("\"", "").split(',')
+    r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+ 
     logging.debug('parsed request')
     logging.info(r)
 
@@ -46,7 +47,7 @@ def register(request):
 def login(request):
     logging.debug(request.body)
     s = str(request.body)[3:-2]#.strip('{}')
-    r = s.replace(' ', '').replace("\"", "").split(',')
+    r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
  
     logging.info("login")
     logging.info(str(r))
@@ -84,11 +85,15 @@ def logout(request):
 
 @api_view(['POST'])
 def profile(request):
-    r = str(request.body)[2:-1].split('&')
-    print("profile",r)
+    logging.debug(request.body)
+    s = str(request.body)[3:-2]#.strip('{}')
+    r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+ 
+    logging.info("profile")
+    logging.info(r)
 
     try:
-        token = request.META.get('HTTP_AUTHORIZATION')
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
         if token == None:
             raise Exception
     except Exception as e:
@@ -108,7 +113,7 @@ def sectors(request):
     if request.method == 'GET':
         print('sectors get!')
         try:
-            #token = request.META.get('HTTP_AUTHORIZATION')
+            #token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
             return bk.sectorsGet()
         except Exception as e:
             print("GET sectors failed")
@@ -116,21 +121,30 @@ def sectors(request):
             return Response("GET sectors failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     elif request.method == 'POST':
-        r = str(request.body)[2:-1].split('&')
+        logging.debug(request.body)
+        s = str(request.body)[3:-2]#.strip('{}')
+        r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+        logging.info("sector post")
+        logging.info(r)
+
         #print("sectors", r)
         if 'name' not in str(request.body) or 'description' not in str(request.body):
+            logging.debug("description or name not found")
             return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
         try:
-            token = request.META.get('HTTP_AUTHORIZATION')
+            token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+            logging.debug('Got token')
             if token == None:
                 raise Exception
         except Exception as e:
-            return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+            logging.debug("Need token to proceed")
+            return Response("Need token to proceed", status=status.HTTP_401_UNAUTHORIZED)
  
         try:
           dic = {}
           for param in r:
-              dic[param.split('=')[0]] = param.split('=')[1]
+              logging.debug(param)
+              dic[param.split(':')[0]] = param.split(':')[1]
  
           des = dic['description']
           name = dic['name']
@@ -143,40 +157,62 @@ def sectors(request):
           return Response('Sector creation failed', status=status.HTTP_401_UNAUTHORIZED)
 
 
-@api_view(['PATCH'])
+@api_view(['PATCH', 'GET'])
 def sectorsUpdate(request, id=None, *args, **kwargs):
-    if 'name' not in str(request.body) or 'description' not in str(request.body):
-            return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
-    try:
-        token = request.META.get('HTTP_AUTHORIZATION')
-        if token == None:
-            raise Exception
-    except Exception as e:
-            return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+    if request.method == 'GET':
+        print('sectors get!')
+        try:
+            #token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+            return bk.sectorsGetById(int(id))
+        except Exception as e:
+            print("GET sectors failed")
+            print(e)
+            return Response("GET sectors failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        #if 'name' not in str(request.body) or 'description' not in str(request.body):
+        #    logging.debug(str(request.body))
+        #    logging.debug('description or name not found')
+        #    return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
+        try:
+            token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+            logging.debug('Get Token')
+            if token == None:
+                raise Exception
+        except Exception as e:
+            logging.debug('Get Token Error')
+            return Response("Need token to proceed", status=status.HTTP_401_UNAUTHORIZED)
  
-    try:
-        r = str(request.body)[2:-1].split('&')
-        dic = {}
-        for param in r:
-            dic[param.split('=')[0]] = param.split('=')[1]
-
-        des = dic['description']
-        name = dic['name']
-        print('sectors update', type(id))
-        res = bk.sectorsUpdate(int(id), name, des, token=token)
-        return res 
-    except Exception as e:
-        print("Sector update failed")
-        print(e)
-        return Response('Sector update failed', status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            s = str(request.body)[3:-2]#.strip('{}')
+            r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+ 
+            dic = {}
+            for param in r:
+                dic[param.split(':')[0]] = param.split(':')[1]
+ 
+            if 'description' in dic:
+                des = dic['description']
+            else:
+                des = None
+            if 'name' in dic:
+                name = dic['name']
+            else:
+                name = None
+            print('sectors update', type(id))
+            res = bk.sectorsUpdate(int(id), name, des, token=token)
+            return res 
+        except Exception as e:
+            print("Sector update failed")
+            print(e)
+            return Response('Sector update failed', status=status.HTTP_401_UNAUTHORIZED)
 
 
 @api_view(['GET', 'POST'])
 def stocks(request):
     if request.method == 'GET':
-        print('get stocks')
+        logging.debug('\nget all stocks')
         try:
-            res = bk.stocks()
+            res = bk.listStocks()
             return Response(res, status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
@@ -184,17 +220,25 @@ def stocks(request):
     elif request.method == 'POST':
         print('create stocks')
         try:
-            token = request.META.get('HTTP_AUTHORIZATION')
+            token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
             if token == None:
                 raise Exception
         except Exception as e:
-            return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+            return Response("Need token to proceed", status=status.HTTP_401_UNAUTHORIZED)
  
         try:
-            r = str(request.body)[2:-1].split('&')
+            if 'name' not in str(request.body) or \
+                   'price' not in str(request.body) or 'sector' not in str(request.body) or \
+                   "unallocated" not in str(request.body) or 'total_volume' not in str(request.body):
+                logging.debug(str(request.body))
+                logging.debug('parameter not found')
+                return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
+            s = str(request.body)[3:-2]#.strip('{}')
+            r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+ 
             dic = {}
             for param in r:
-                dic[param.split('=')[0]] = param.split('=')[1]
+                dic[param.split(':')[0]] = param.split(':')[1]
             res = bk.stocksCreate(name=dic['name'], price=dic['price'], sector_id=dic['sector'], \
                     unallocated=dic['unallocated'], total_volume=dic['total_volume'], token=token)
             return res #Response(res, status=status.HTTP_201_CREATED)
@@ -204,18 +248,21 @@ def stocks(request):
 
 
 @api_view(['GET'])
-def getStock(request, id=None):
+def getStockById(request, id=None):
     try:
-        token = request.META.get('HTTP_AUTHORIZATION')
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
         if token == None:
             raise Exception
     except Exception as e:
-        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+        logging.debug('no token')
+        return Response("", status=status.HTTP_401_UNAUTHORIZED)
  
     try:
-        res = bk.getStock(int(id), token)
+        logging.debug('Got token!')
+        res = bk.getStockById(int(id), token)
         return res
     except Exception as e:
+        logging.debug('bk getStockById exception')
         print(e)
         return Response("Failed to get stock by id "+str(id), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -223,7 +270,7 @@ def getStock(request, id=None):
 @api_view(['GET', 'POST'])
 def orders(request):
     try:
-        token = request.META.get('HTTP_AUTHORIZATION')
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
         if token == None:
             raise Exception
     except Exception as e:
@@ -238,14 +285,16 @@ def orders(request):
             print(e)
             return Response("Failed to get order", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
-        token = request.META.get('HTTP_AUTHORIZATION')
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
         if token == '':
             return Response("token not found", status=status.HTTP_400_BAD_REQUEST)
         try:
-            r = str(request.body)[2:-1].split('&')
+            s = str(request.body)[3:-2]#.strip('{}')
+            r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+ 
             dic = {}
             for param in r:
-                dic[param.split('=')[0]] = param.split('=')[1]
+                dic[param.split(':')[0]] = param.split(':')[1]
             res = bk.ordersCreate(stock=dic['stock_id'], type=dic['type'], \
                     bid_price=dic['bid_price'], \
                     bid_volume=dic['bid_volume'], token=token)

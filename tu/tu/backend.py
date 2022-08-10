@@ -120,11 +120,35 @@ def sectorsGet():
     db = get_connect()
     c = db.cursor()
 
-    c.execute("SELECT * FROM sectors")
-    r = c.fetchall()
-    if len(r) == 0:
+    c.execute("SELECT * FROM sectors;")
+    data = c.fetchall()
+    logging.debug(data)
+    if len(data) == 0:
         db.close()
         return Response({}, status=status.HTTP_200_OK)
+    result = []
+    logging.debug(data)
+    for r in data:
+        id = r[0]
+        name = r[1]
+        description = r[2]
+        result.append({'id':id, 'name':name, 'description':description})
+    logging.debug(result)
+    db.close()
+    return Response(result, \
+            status=status.HTTP_200_OK)
+
+
+def sectorsGetById(id):
+    db = get_connect()
+    c = db.cursor()
+
+    c.execute("SELECT * FROM sectors WHERE id="+str(id)+";")
+    r = c.fetchall()
+    logging.debug(r)
+    if len(r) == 0:
+        db.close()
+        return Response({}, status=status.HTTP_404_NOT_FOUND)
     id = r[0][0]
     name = r[0][1]
     description = r[0][2]
@@ -143,8 +167,8 @@ def sectorsPost(name, description, token):
     db = get_connect()
     c = db.cursor()
     c.execute("SELECT COUNT(*) FROM sectors;")
-    r = c.fetchall()[0][0]
-    sector_id = int(r)
+    r = c.fetchall()
+    sector_id = int(r[0][0])
 
     cmd = "INSERT INTO sectors \n\
             VALUES (" + str(sector_id) + \
@@ -169,29 +193,42 @@ def sectorsUpdate(id, name, description, token):
     db = get_connect()
     c = db.cursor()
 
+    logging.debug('plan to update name:'+str(name)+', description:'+str(description))
     c.execute("SELECT * FROM sectors WHERE id = "+str(id)+";")
     r = c.fetchall()
     print("select result", r)
     if len(r) == 0:
         return Response({'message':"No sector with id "+str(id)}, status.HTTP_406_NOT_ACCEPTABLE)
-    id = r[0][0]
-    name = r[0][1]
     
-    cmd = "UPDATE sectors set description = \"" + \
+    if description != None and name != None:
+        cmd = "UPDATE sectors set description = \"" + \
             description+"\" WHERE id = "+str(id) + \
             " and name = \"" + name + "\";"
+    elif name != None:
+        cmd = "UPDATE sectors set name = \"" + \
+            name + "\" WHERE id = "+str(id) + ';'
+    elif description != None:
+        cmd = "UPDATE sectors set description = \"" + \
+            description+"\" WHERE id = "+str(id) + ';'
     c.execute(cmd)
-    #print(c.fetchall())
+    print(c.fetchall())
     db.commit() 
+    c.execute("SELECT * FROM sectors WHERE id = "+str(id)+";")
+    r = c.fetchall()[0]
+    name = r[1]
+    des = r[2]
     db.close()
-    return Response({'id':'ok'}, status=status.HTTP_204_NO_CONTENT)
+    res = {'id':id, 'name':name, 'description':des}
+    logging.debug(res)
+    return Response(res, status=status.HTTP_200_OK)
 
 
-def stocks():
+def listStocks():
     db = get_connect()
     c = db.cursor()
 
     c.execute("SELECT * FROM stocks;")
+    logging.debug('backend: get all stocks')
     res = []
     r = c.fetchall()
     for stock in r:
@@ -201,7 +238,11 @@ def stocks():
         name = stock[2]
         total_volume = int(stock[3])
         unallocated = int(stock[4])
-        price = float(str(stock[5]).strip("Decimal(\')"))
+        price = str(stock[5]).strip("Decimal(\')")
+        if '.'not in price:
+            price += '.00'
+        elif len(price.split('.')[1]) == 1:
+            price += '0'
 
         data = {"id":id, "name":name, "total_volume":total_volume, "sector":sector_id, \
                 "unallocated":unallocated, "price":price}
@@ -212,7 +253,7 @@ def stocks():
 
 
 def stocksCreate(name, price, sector_id, unallocated, total_volume, token):
-    print(stocksCreate)
+    print('stocksCreate: '+name,  price, sector_id, unallocated, total_volume,)
     print(login_session)
     try: 
         login_session[token]
@@ -248,11 +289,13 @@ def stocksCreate(name, price, sector_id, unallocated, total_volume, token):
       }, status=status.HTTP_201_CREATED)
 
 
-def getStock(id, token):
+def getStockById(id, token):
+    logging.debug('backen: get stock by id')
     try: 
         login_session[token]
     except Exception as e:
         print(e)
+        logging.debug('log in session not found')
         return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
  
     db = get_connect()
@@ -260,8 +303,9 @@ def getStock(id, token):
 
     c.execute("SELECT * FROM stocks WHERE id = "+str(id)+';')
     r = c.fetchall()
+    logging.debug(r)
     if len(r) == 0:
-        return {}
+        return Response({}, status=status.HTTP_404_NOT_FOUND)
     data = r[0]
     print(data)
     sector_id = data[1]
@@ -269,11 +313,18 @@ def getStock(id, token):
     total_volume = data[3]
     unallocated = data[4]
     price = str(str(data[5]).strip('Decimal(\')'))
+    if '.'not in price:
+        price += '.00'
+    elif len(price.split('.')[1]) == 1:
+        price += '0'
 
     db.close()
 
-    return Response({'id': id, 'name': name, 'price': price, 'sector': sector_id, 'unallocated': unallocated, \
-            'price': price}, status=status.HTTP_200_OK)
+    res = {'id': int(id), 'name': name, 'price': price, 'sector': sector_id, 'unallocated': unallocated, \
+            'total_volume': int(total_volume)}
+    logging.debug(res)
+
+    return Response(res, status=status.HTTP_200_OK)
 
 
 def getOrders(token):
