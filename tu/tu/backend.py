@@ -289,15 +289,7 @@ def stocksCreate(name, price, sector_id, unallocated, total_volume, token):
       }, status=status.HTTP_201_CREATED)
 
 
-def getStockById(id, token):
-    logging.debug('backen: get stock by id')
-    try: 
-        login_session[token]
-    except Exception as e:
-        print(e)
-        logging.debug('log in session not found')
-        return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
- 
+def getStockById(id):
     db = get_connect()
     c = db.cursor()
 
@@ -392,6 +384,7 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
             break
     if flag == False:
         return Response('Invalid Stock ID', status=status.HTTP_400_BAD_REQUEST)
+    logging.debug('stock id'+str(stock)+', user id: '+str(user_id))
 
     # Check current available funds, block if enough to purchase
     if type == 'BUY':
@@ -401,9 +394,12 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
             # this shouldn't happen because we already had the token -- aka user added
             return Response('User does not exist', status=status.HTTP_404_NOT_FOUND)
         available_funds = float(r[0][0])
+        logging.debug('available funds: '+str(avaiable_funds))
         if available_funds < float(bid_price):
+            logging.debug('Insufficient funds')
             return Response('Insufficient funds', status=status.HTTP_401_UNAUTHORIZED)
     elif type == 'SELL':
+        logging.debug('SELL')
         return Response('TODO', status=status.HTTP_404_NOT_FOUND)
     else:
         return Response('Unknow order type', status=status.HTTP_400_BAD_REQUEST)
@@ -417,13 +413,19 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
     else:
         r = r[0][0]
     order_id = int(r)
+    logging.debug('Found order id:'+str(order_id))
     
     # Generate response
-    #created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ")
     created_at = time.strftime('%Y-%m-%d %H:%M:%S')
     updated_at = created_at
     executed_volume = bid_volume
     order_status = 'COMPLETED' # TODO Double check order status
+
+    if '.'not in bid_price:
+        bid_price += '.00'
+    elif len(price.split('.')[1]) == 1:
+        bid_price += '0'
+
     cmd = "INSERT INTO orders VALUES(" + str(order_id) + \
             ", " + user_id + \
             ", " + str(stock) + \
@@ -435,10 +437,34 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
             ", " + bid_volume + \
             ", " + executed_volume + \
             ");"
-    print(cmd)
+    logging.debug(cmd)
     c.execute(cmd)
     r = c.fetchall()
     print('create order insert into db',r)
     db.commit()
     db.close()
     return Response({'Success'}, status=status.HTTP_200_OK)
+
+
+def match():
+    db = get_connect()
+    c = db.cursor()
+ 
+    # sort buyer descending
+    c.execute("SELECT * FROM orders WHERE type=\"BUY\" ORDER BY bid_price DESC;")
+    r = c.fetchall()
+    logging.debug(r)
+
+    # sort seller ascending
+    c.execute("SELECT * FROM orders WHERE type=\"SELL\" ORDER BY bid_price ASC;")
+    r = c.fetchall()
+    logging.debug(r)
+
+    db.close()
+    return Response({}, status=status.HTTP_200_OK)
+
+
+def openMarket():
+    return Response({}, status=status.HTTP_200_OK)
+
+

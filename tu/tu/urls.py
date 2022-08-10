@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/v1/stocks/', api_views.stocks),
     path('api/v1/stocks/<int:id>/', api_views.getStockById),
     path('api/v1/orders/', api_views.orders),
+    path('api/v1/match/', api_views.match),
     path('api/', include(router.urls)),
 ]
 

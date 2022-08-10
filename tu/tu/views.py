@@ -249,17 +249,21 @@ def stocks(request):
 
 @api_view(['GET'])
 def getStockById(request, id=None):
+    """
     try:
         token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
         if token == None:
             raise Exception
     except Exception as e:
-        logging.debug('no token')
-        return Response("", status=status.HTTP_401_UNAUTHORIZED)
+        token = None
+        logging.debug('no token but fine')
+        pass
+        #return Response("", status=status.HTTP_401_UNAUTHORIZED)
+    """
  
     try:
         logging.debug('Got token!')
-        res = bk.getStockById(int(id), token)
+        res = bk.getStockById(int(id))
         return res
     except Exception as e:
         logging.debug('bk getStockById exception')
@@ -269,11 +273,14 @@ def getStockById(request, id=None):
 
 @api_view(['GET', 'POST'])
 def orders(request):
+    logging.info('\n\n---- order ---- ')
     try:
         token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
         if token == None:
             raise Exception
+        logging.debug('GOT Token')
     except Exception as e:
+        logging.debug('No Token')
         return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
  
     if request.method == "GET":
@@ -285,6 +292,7 @@ def orders(request):
             print(e)
             return Response("Failed to get order", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
+        logging.debug('Post an order')
         token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
         if token == '':
             return Response("token not found", status=status.HTTP_400_BAD_REQUEST)
@@ -292,9 +300,11 @@ def orders(request):
             s = str(request.body)[3:-2]#.strip('{}')
             r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
  
+            logging.debug('order input:'+str(r))
             dic = {}
             for param in r:
                 dic[param.split(':')[0]] = param.split(':')[1]
+            logging.debug(dic)
             res = bk.ordersCreate(stock=dic['stock_id'], type=dic['type'], \
                     bid_price=dic['bid_price'], \
                     bid_volume=dic['bid_volume'], token=token)
@@ -305,3 +315,34 @@ def orders(request):
  
 
 
+@api_view(['GET'])
+def match(request):
+    logging.info('\n\n---- MATCH ---- ')
+    try:
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+        if token == None:
+            raise Exception
+        logging.debug('GOT Token')
+    except Exception as e:
+        logging.debug('No Token')
+        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+
+    res = bk.match()
+    return res
+ 
+
+@api_view(['POST'])
+def open(request):
+    logging.info('\n\n---- OPEN ---- ')
+    try:
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+        if token == None:
+            raise Exception
+        logging.debug('GOT Token')
+    except Exception as e:
+        logging.debug('No Token')
+        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+
+    res = bk.openMarket()
+    return res
+ 
