@@ -5,6 +5,32 @@ from . import backend as bk
 import time
 from rest_framework.views import APIView
 import logging, json
+from opentelemetry import trace
+from opentelemetry.propagate import inject
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+)
+
+trace.set_tracer_provider(TracerProvider())
+tracer = trace.get_tracer_provider().get_tracer(__name__)
+
+trace.get_tracer_provider().add_span_processor(
+    BatchSpanProcessor(ConsoleSpanExporter())
+)
+
+
+@api_view(['GET'])
+def logtest(request):
+    with tracer.start_as_current_span("client"):
+        with tracer.start_as_current_span("client-server"):
+            try:
+                x = 1 / 0
+            except Exception as ex:
+                pass
+    return Response({}, status=status.HTTP_200_OK)
+
 
 @api_view(['POST'])
 def register(request):
