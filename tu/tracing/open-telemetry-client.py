@@ -38,9 +38,8 @@ with tracer.start_as_current_span("client"):
         headers = {}
         inject(headers)
         requested = get(
-            "http://localhost:8080",
-            params={"param": argv[1]},
-            headers=headers,
+            "http://localhost:8080/log",
+            params={"param": 'noparam'},
         )
 
         #assert requested.status_code == 200

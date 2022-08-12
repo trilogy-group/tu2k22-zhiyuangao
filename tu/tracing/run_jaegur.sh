@@ -8,3 +8,5 @@ docker run -d --name jaeger \
   -p 14268:14268 \
   -p 9411:9411 \
   jaegertracing/all-in-one:1.6
+
+

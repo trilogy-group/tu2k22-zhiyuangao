@@ -22,6 +22,7 @@ from . import views as api_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('log/', api_views.logtest),
+    path('', include('django_prometheus.urls')),
     path('api/v1/auth/signup/', api_views.register),
     path('api/v1/auth/login/', api_views.login),
     path('api/v1/auth/logout/', api_views.logout),
