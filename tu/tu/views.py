@@ -32,9 +32,9 @@ jaeger_exporter = JaegerExporter(
     #collector_endpoint='http://localhost:14268/api/traces?format=jaeger.thrift'
 )
 # Create a BatchSpanProcessor and add the exporter to it
-span_processor = BatchSpanProcessor(ConsoleSpanExporter())
+#span_processor = BatchSpanProcessor()
 # add to the tracer
-trace.get_tracer_provider().add_span_processor(span_processor)
+#trace.get_tracer_provider().add_span_processor(span_processor)
 
 @api_view(['GET'])
 def logtest(request):
