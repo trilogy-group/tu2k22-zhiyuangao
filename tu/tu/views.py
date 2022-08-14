@@ -6,10 +6,12 @@ import time
 from rest_framework.views import APIView
 import logging, json
 from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
 trace.set_tracer_provider(
 TracerProvider(
@@ -17,6 +19,9 @@ TracerProvider(
     )
 )
 tracer = trace.get_tracer(__name__)
+LoggingInstrumentor().instrument(set_logging_format=True)
+LoggingInstrumentor(logging_format='%(msg)s [span_id=%(span_id)s]')
+
 
 # create a JaegerExporter
 jaeger_exporter = JaegerExporter(
@@ -27,17 +32,21 @@ jaeger_exporter = JaegerExporter(
     #collector_endpoint='http://localhost:14268/api/traces?format=jaeger.thrift'
 )
 # Create a BatchSpanProcessor and add the exporter to it
-span_processor = BatchSpanProcessor(jaeger_exporter)
+span_processor = BatchSpanProcessor(ConsoleSpanExporter())
 # add to the tracer
 trace.get_tracer_provider().add_span_processor(span_processor)
 
 @api_view(['GET'])
 def logtest(request):
+    logger = logging.getLogger(__name__)
+    logger.info('----test----')
+    """
     with tracer.start_as_current_span("client"):
         try:
             x = 1 / 0
         except Exception as ex:
             pass
+    """
     return Response({}, status=status.HTTP_200_OK)
 
 

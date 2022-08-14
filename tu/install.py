@@ -8,3 +8,12 @@ sudo mysqld --skip-grant-tables
 # GRANT ALL PRIVILEGES ON *.* TO 'sammy'@'localhost' WITH GRANT OPTION;
 # FLUSH PRIVILEGES;
 # 
+(0, 2, 'Googtles12345', 1000, 1000, Decimal('1000'))
+{
+  "id": 0,
+  "name": "string",
+  "price": "100.00",
+  "sector": 0,
+  "unallocated": 0,
+  "total_volume": 0
+}

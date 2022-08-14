@@ -460,6 +460,11 @@ def match():
     r = c.fetchall()
     logging.debug(r)
 
+    # Also need the market price
+
+    # Order match, give it all the buyers and sellers -- only do the business logic
+    # encapsulation --> better for portibility e.g., lambda deployment
+    # aka. decoupling --> unit tests made easier
     db.close()
     return Response({}, status=status.HTTP_200_OK)
 

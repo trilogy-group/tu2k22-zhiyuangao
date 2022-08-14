@@ -16,4 +16,4 @@ scrape_configs:
     scrape_interval: 5s
 
     static_configs:
-      - targets: ['localhost:8080']
+      - targets: ['8080-trilogygrou-tu2k22zhiyu-sq8b22pxndn.ws.legacy.devspaces.com:']
