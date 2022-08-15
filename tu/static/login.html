@@ -16,21 +16,16 @@
 <body class="body">
 <div class="login-page">
   <div class="form">
-    <form, id='login'>
       <lottie-player src="https://assets4.lottiefiles.com/datafiles/XRVoUu3IX4sGWtiC3MPpFnJvZNq7lVWDCa8LSqgS/profile.json"  background="transparent"  speed="1"  style="justify-content: center;" loop  autoplay></lottie-player>
       <input type="text" placeholder="&#xf007;  email" id="email"/>
       <input type="password" placeholder="&#xf023;  password" id="pwd"/>
-      <button type="submit" onclick="window.location.href='login.html'" id="loginbutton">LOGIN</button>
+      <button type="submit" onclick="handleRegister()" onsubmit="return handleRegister()" id="loginbutton">LOGIN</button>
       <br>
-    </form>
-
   </div>
 </div>
 
 <script>
-    var registerForm = document.getElementById("login");
     async function handleRegister(event) {
-      event.preventDefault();
       console.log(document.getElementById("email").value);
       console.log(document.getElementById("pwd").value);
 
@@ -45,12 +40,11 @@
           password: document.getElementById("pwd").value,
           email: document.getElementById("email").value
         })
-
       })
 
       document.getElementById("loginbutton").innerHTML = "login";
 
-      if (result.status == 201) {
+      if (result.status == 200) {
         resp = await result.json()
         console.log(resp);
         alert("Login SUCCESS, user_id=" + resp["id"])
