@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: tu2k22
+  name: ingress-zhiyuan-2
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  defaultBackend:
+    service:
+      name: zhiyuan-django
+      port:
+        number: 8080
+status:
+  loadBalancer:
+    ingress:
+    - hostname: k8s-tu2k22-ingressz-deb44d5b18-108501903.us-east-1.elb.amazonaws.com

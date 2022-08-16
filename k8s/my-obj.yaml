@@ -1,0 +1,8 @@
+apiVersion: stable.example.com/v1
+kind: zhiyuan-platform
+metadata:
+  name: object-zhiyuan-0
+spec:
+  name: "zhiyuan"
+  age: "25"
+  email: "zhiyuan.gao@trilogy.com"

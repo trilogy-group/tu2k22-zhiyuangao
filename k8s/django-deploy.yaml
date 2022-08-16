@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  creationTimestamp: "2022-08-16T20:01:52Z"
+  generation: 1
+  labels:
+    app: zhiyuan-app
+  name: zhiyuan-app
+  namespace: tu2k22
+  resourceVersion: "567383"
+  uid: a4627f68-3f9c-458d-a506-7a46f77b6d6c
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: zhiyuan-app
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: zhiyuan-app
+    spec:
+      containers:
+      - image: zhiyuangao/django:latest
+        imagePullPolicy: Always
+        name: django
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  availableReplicas: 1
+  conditions:
+  - lastTransitionTime: "2022-08-16T20:02:13Z"
+    lastUpdateTime: "2022-08-16T20:02:13Z"
+    message: Deployment has minimum availability.
+    reason: MinimumReplicasAvailable
+    status: "True"
+    type: Available
+  - lastTransitionTime: "2022-08-16T20:01:52Z"
+    lastUpdateTime: "2022-08-16T20:02:13Z"
+    message: ReplicaSet "zhiyuan-app-b5d86447f" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  observedGeneration: 1
+  readyReplicas: 1
+  replicas: 1
+  updatedReplicas: 1
