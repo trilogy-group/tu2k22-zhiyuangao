@@ -1,6 +1,6 @@
 use tu;
 
-DROP TABLE IF EXISTS ohlcv, market_day, orders, holdings, users, stocks, sectors;
+DROP TABLE IF EXISTS admins, ohlcv, market_day, orders, holdings, users, stocks, sectors;
 CREATE TABLE sectors(id INT NOT NULL,
           name VARCHAR(50) NOT NULL,
           description VARCHAR(200) NOT NULL,
@@ -74,3 +74,7 @@ CREATE TABLE ohlcv(
 	FOREIGN KEY (stock_id) REFERENCES stocks(id)
 );
 
+CREATE TABLE admins(id INT NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY (id) REFERENCES users(id)
+);
