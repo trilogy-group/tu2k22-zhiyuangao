@@ -158,14 +158,21 @@ def sectorsGetById(id):
 
 
 def sectorsPost(name, description, token):
-    try: 
-        login_session[token]
-    except Exception as e:
-        print(e)
-        return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
- 
     db = get_connect()
     c = db.cursor()
+
+    try: 
+        user_id = login_session[token].data['id']
+        c.execute("SELECT COUNT(*) FROM admins WHERE id = "+str(user_id)+";")
+        count = c.fetchall()[0][0]
+        logging.info(count)
+        if count == 0:
+            raise Exception
+    except Exception as e:
+        db.close()
+        print(e)
+        return Response('Unauthorized token', status=status.HTTP_401_UNAUTHORIZED)
+ 
     c.execute("SELECT COUNT(*) FROM sectors;")
     r = c.fetchall()
     sector_id = int(r[0][0])
@@ -253,16 +260,27 @@ def listStocks():
 
 
 def stocksCreate(name, price, sector_id, unallocated, total_volume, token):
-    print('stocksCreate: '+name,  price, sector_id, unallocated, total_volume,)
-    print(login_session)
-    try: 
-        login_session[token]
-    except Exception as e:
-        print(e)
-        return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
+    #print('stocksCreate: '+name,  price, sector_id, unallocated, total_volume,)
+    #print(login_session)
+    logging.info('create stock')
+    logging.info('name:'+name)
+    logging.info('price:'+str(price))
  
     db = get_connect()
     c = db.cursor()
+    try: 
+        user_id = login_session[token].data['id']
+        c.execute("SELECT COUNT(*) FROM admins WHERE id = "+str(user_id)+";")
+        count = c.fetchall()[0][0]
+        logging.info(count)
+        if count == 0:
+            raise Exception
+    except Exception as e:
+        db.close()
+        print(e)
+        return Response('Unauthorized token', status=status.HTTP_401_UNAUTHORIZED)
+ 
+ 
 
     c.execute("SELECT COUNT(*) FROM stocks;")
     r = c.fetchall()[0][0]

@@ -165,6 +165,7 @@ def sectors(request):
             return Response("GET sectors failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     elif request.method == 'POST':
+
         logging.debug(request.body)
         s = str(request.body)[3:-2]#.strip('{}')
         r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
@@ -175,6 +176,7 @@ def sectors(request):
         if 'name' not in str(request.body) or 'description' not in str(request.body):
             logging.debug("description or name not found")
             return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
+
         try:
             token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
             logging.debug('Got token')
@@ -193,7 +195,6 @@ def sectors(request):
           des = dic['description']
           name = dic['name']
           res = bk.sectorsPost(description=des, name=name, token=token)
-          #print(res)
           return res #Response(res, status=status.HTTP_201_CREATED)
         except Exception as e:
           print("Sector creation failed")
@@ -283,6 +284,9 @@ def stocks(request):
             dic = {}
             for param in r:
                 dic[param.split(':')[0]] = param.split(':')[1]
+
+            logging.info('Here')
+            print(dic)
             res = bk.stocksCreate(name=dic['name'], price=dic['price'], sector_id=dic['sector'], \
                     unallocated=dic['unallocated'], total_volume=dic['total_volume'], token=token)
             return res #Response(res, status=status.HTTP_201_CREATED)
