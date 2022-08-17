@@ -34,6 +34,7 @@ urlpatterns = [
     path('api/v1/stocks/<int:id>/', api_views.getStockById),
     path('api/v1/orders/', api_views.orders),
     path('api/v1/match/', api_views.match),
+    path('api/v1/process-logs/', api_views.process-logs),
     path('api/', include(router.urls)),
 ]
 
