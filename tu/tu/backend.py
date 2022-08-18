@@ -161,6 +161,7 @@ def sectorsPost(name, description, token):
     db = get_connect()
     c = db.cursor()
 
+    """
     try: 
         user_id = login_session[token].data['id']
         c.execute("SELECT COUNT(*) FROM admins WHERE id = "+str(user_id)+";")
@@ -172,7 +173,7 @@ def sectorsPost(name, description, token):
         db.close()
         print(e)
         return Response('Unauthorized token', status=status.HTTP_401_UNAUTHORIZED)
- 
+    """
     c.execute("SELECT COUNT(*) FROM sectors;")
     r = c.fetchall()
     sector_id = int(r[0][0])
@@ -268,6 +269,7 @@ def stocksCreate(name, price, sector_id, unallocated, total_volume, token):
  
     db = get_connect()
     c = db.cursor()
+    """
     try: 
         user_id = login_session[token].data['id']
         c.execute("SELECT COUNT(*) FROM admins WHERE id = "+str(user_id)+";")
@@ -279,7 +281,7 @@ def stocksCreate(name, price, sector_id, unallocated, total_volume, token):
         db.close()
         print(e)
         return Response('Unauthorized token', status=status.HTTP_401_UNAUTHORIZED)
- 
+    """
  
 
     c.execute("SELECT COUNT(*) FROM stocks;")
@@ -381,6 +383,7 @@ def getOrders(token):
 
 def ordersCreate(stock, type, bid_price, bid_volume, token):
     # Authenticate token
+    print("Authenticate token")
     try: 
         user_session = login_session[token]
     except Exception as e:
@@ -390,6 +393,7 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
     user_id = user_session.data['id']
 
     # Check Stock ID availability
+    print("Check Stock ID availability")
     db = get_connect()
     c = db.cursor()
 
@@ -405,6 +409,7 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
     logging.debug('stock id'+str(stock)+', user id: '+str(user_id))
 
     # Check current available funds, block if enough to purchase
+    print("Check current available funds")
     if type == 'BUY':
         c.execute("SELECT available_funds FROM users where id =" + str(user_id)+";")
         r = c.fetchall()
@@ -412,7 +417,7 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
             # this shouldn't happen because we already had the token -- aka user added
             return Response('User does not exist', status=status.HTTP_404_NOT_FOUND)
         available_funds = float(r[0][0])
-        logging.debug('available funds: '+str(avaiable_funds))
+        logging.debug('available funds: '+str(available_funds))
         if available_funds < float(bid_price):
             logging.debug('Insufficient funds')
             return Response('Insufficient funds', status=status.HTTP_401_UNAUTHORIZED)
@@ -424,6 +429,7 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
 
 
     # Find order id
+    print("Find order id")
     c.execute("SELECT COUNT(*) FROM orders;")
     r = c.fetchall()
     if len(r) == 0:
@@ -434,6 +440,7 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
     logging.debug('Found order id:'+str(order_id))
     
     # Generate response
+    print("Generate response")
     created_at = time.strftime('%Y-%m-%d %H:%M:%S')
     updated_at = created_at
     executed_volume = bid_volume
@@ -441,19 +448,20 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
 
     if '.'not in bid_price:
         bid_price += '.00'
-    elif len(price.split('.')[1]) == 1:
+    elif len(bid_price.split('.')[1]) == 1:
         bid_price += '0'
+    print(bid_price)
 
     cmd = "INSERT INTO orders VALUES(" + str(order_id) + \
-            ", " + user_id + \
+            ", " + str(user_id) + \
             ", " + str(stock) + \
-            ", \"" + type + "\""+\
+            ", \"" + str(type) + "\""+\
             ", \"" + created_at + "\""+\
             ", \"" + updated_at + "\""+\
             ", \"" + order_status + "\""+\
-            ", " + bid_price + \
-            ", " + bid_volume + \
-            ", " + executed_volume + \
+            ", " + str(bid_price) + \
+            ", " + str(bid_volume) + \
+            ", " + str(executed_volume) + \
             ");"
     logging.debug(cmd)
     c.execute(cmd)

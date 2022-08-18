@@ -13,24 +13,24 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
-trace.set_tracer_provider(
-TracerProvider(
-        resource=Resource.create({SERVICE_NAME: "my-helloworld-service"})
-    )
-)
-tracer = trace.get_tracer(__name__)
-LoggingInstrumentor().instrument(set_logging_format=True)
-LoggingInstrumentor(logging_format='%(msg)s [span_id=%(span_id)s]')
+#trace.set_tracer_provider(
+#TracerProvider(
+#        resource=Resource.create({SERVICE_NAME: "my-helloworld-service"})
+#    )
+#)
+#tracer = trace.get_tracer(__name__)
+#LoggingInstrumentor().instrument(set_logging_format=True)
+#LoggingInstrumentor(logging_format='%(msg)s [span_id=%(span_id)s]')
 
 
 # create a JaegerExporter
-jaeger_exporter = JaegerExporter(
+#jaeger_exporter = JaegerExporter(
     # configure agent
-    agent_host_name='localhost',
-    agent_port=6831,
-    collector_endpoint='http://localhost:14268/api/traces?format=jaeger.thrift'
-    #collector_endpoint='http://localhost:14268/api/traces?format=jaeger.thrift'
-)
+#    agent_host_name='localhost',
+#    agent_port=6831,
+#    collector_endpoint='http://localhost:14268/api/traces?format=jaeger.thrift'
+#)
+
 # Create a BatchSpanProcessor and add the exporter to it
 #span_processor = BatchSpanProcessor()
 # add to the tracer
@@ -57,9 +57,10 @@ def register(request):
     logging.debug(request.body)
     logging.debug(str(request.body)[1:])
     s = str(request.body)[3:-2]#.strip('{}')
-    r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+    r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
  
     logging.debug('parsed request')
+    print(r)
     logging.info(r)
 
     if 'email' not in str(request.body) or 'password' not in str(request.body) \
@@ -70,7 +71,7 @@ def register(request):
       dic = {}
       for param in r:
           dic[param.split(':')[0]] = param.split(':')[1]
-      logging.debug(dic)
+      logging.info(dic)
  
       # assume there are no = in names
       # assume there are no = in password
@@ -78,6 +79,7 @@ def register(request):
       email = dic['email']
       pw = dic['password']
       name = dic['name']
+      print(email, pw, name)
       res = bk.register(email, pw, name)
       logging.debug(res)
       return Response(res, status=status.HTTP_201_CREATED)
@@ -91,7 +93,7 @@ def register(request):
 def login(request):
     logging.debug(request.body)
     s = str(request.body)[3:-2]#.strip('{}')
-    r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+    r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
  
     logging.info("login")
     logging.info(str(r))
@@ -168,7 +170,7 @@ def sectors(request):
 
         logging.debug(request.body)
         s = str(request.body)[3:-2]#.strip('{}')
-        r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+        r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
         logging.info("sector post")
         logging.info(r)
 
@@ -279,7 +281,7 @@ def stocks(request):
                 logging.debug('parameter not found')
                 return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
             s = str(request.body)[3:-2]#.strip('{}')
-            r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+            r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
  
             dic = {}
             for param in r:
@@ -321,7 +323,7 @@ def getStockById(request, id=None):
 
 @api_view(['GET', 'POST'])
 def orders(request):
-    logging.info('\n\n---- order ---- ')
+    print('\n\n---- order ---- ')
     try:
         token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
         if token == None:
@@ -339,21 +341,23 @@ def orders(request):
         except Exception as e:
             print(e)
             return Response("Failed to get order", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     else:
-        logging.debug('Post an order')
+        print('Post an order')
         token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+        print(token)
         if token == '':
             return Response("token not found", status=status.HTTP_400_BAD_REQUEST)
         try:
             s = str(request.body)[3:-2]#.strip('{}')
-            r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").split(',')
+            r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
  
-            logging.debug('order input:'+str(r))
+            print('order input:'+str(r))
             dic = {}
             for param in r:
                 dic[param.split(':')[0]] = param.split(':')[1]
-            logging.debug(dic)
-            res = bk.ordersCreate(stock=dic['stock_id'], type=dic['type'], \
+            print(dic)
+            res = bk.ordersCreate(stock=dic['stock'], type=dic['type'], \
                     bid_price=dic['bid_price'], \
                     bid_volume=dic['bid_volume'], token=token)
             return res

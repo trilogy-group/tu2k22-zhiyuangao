@@ -17,3 +17,9 @@ sudo mysqld --skip-grant-tables
   "unallocated": 0,
   "total_volume": 0
 }
+
+docker build -t gcr.io/micro-harbor-259903/videosharex:v2 .
+docker push gcr.io/micro-harbor-259903/videosharex:v3
+kubectl create deployment videosharex-app --image=gcr.io/micro-harbor-259903/videosharex:v3
+kubectl expose deployment videosharex-app --type=LoadBalancer --port 8000 --target-port 8000
+# docker run -i -t --rm -p 8000:8000 xxxx

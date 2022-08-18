@@ -1,4 +1,4 @@
-import requests
+import requests, subprocess
 import time
 
 #url = "https://8080-trilogygrou-tu2k22zhiyu-sq8b22pxndn.ws.legacy.devspaces.com/"
@@ -8,7 +8,7 @@ def signup(name='user1'):
     email = name+"@example.com"
     # 1. post to sign up a user
     #r = requests.post('http://127.0.0.1:8080/api/v1/auth/signup', {"email": name+"@email.com", "password": "string", "name":name})
-    r = requests.post(url+'api/v1/auth/signup', {"email": name+"@email.com", "password": "string", "name":name})
+    r = requests.post(url+'api/v1/auth/signup/', {"email": name+"@email.com", "password": "password", "name":name})
     print(r)
     print(r.json())
     print('user '+name+' signed up')
@@ -16,7 +16,7 @@ def signup(name='user1'):
 
 def login(name='user1'):
     # log in
-    r = requests.post(url+'api/v1/auth/login', {"password": "string", "username":name})
+    r = requests.post(url+'api/v1/auth/login/', {"password": "password", "email":name+"@email.com"})
     print(r)
     print(r.json())
     return r.json()['token']
@@ -58,7 +58,7 @@ def postSector(token):
         "Content-Type": "application/json",
         "Authorization": token
     }
-    r = requests.post(url+'api/v1/sectors', {'name':'sectorname2', 'description':'description2'}, headers=headers)
+    r = requests.post(url+'api/v1/sectors/', {'name':'sector1', 'description':'description2'}, headers=headers)
     print(r)
     print(r.json())
 
@@ -88,7 +88,7 @@ def createStocks(token):
         "Content-Type": "application/json",
         "Authorization": token
     }
-    r = requests.post('http://127.0.0.1:8080/api/v1/stocks', {  "name": "string", "price": "100.00", "sector": 0, "unallocated": 0, "total_volume": 0}, headers=headers)
+    r = requests.post('http://127.0.0.1:8080/api/v1/stocks/', {  "name": "string", "price": "1.00", "sector": 0, "unallocated":100000, "total_volume": 100000}, headers=headers)
     print(r)
     print(r.json())
     print('Created stocks')
@@ -109,15 +109,14 @@ def listOrders(token):
     print('Listed orders')
 
 
-def createOrders(token):
+def createOrders(token, type_s):
     headers = {
         "Content-Type": "application/json",
         "Authorization": token
     }
-    r = requests.post('http://127.0.0.1:8080/api/v1/orders', { "stock_id": 1, 'type': "BUY", "bid_price": 10, "bid_volume": 5}, headers=headers)
+    r = requests.post('http://127.0.0.1:8080/api/v1/orders/', { "stock_id": 0, 'type': type_s, "bid_price": 1, "bid_volume": 1}, headers=headers)
     print(r)
     print(r.json())
-    print('Created orders')
 
 
 def signupcase3():
@@ -130,8 +129,50 @@ def signupcase3():
     print('user '+name+' signed up')
 
 
+def signupbuyer(name):
+    cmd = "curl --location --request POST 'http://127.0.0.1:8080/api/v1/auth/signup/' --header 'Content-Type: application/json' --data-raw '{\"password\": \"admin\", \"email\": \""+name+"@trilogy.com\", \"name\": \""+name+"\"}'"
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    p.wait()
+    print(p.communicate())
+
+def loginbuyer(name):
+    cmd = "curl --location --request POST 'http://127.0.0.1:8080/api/v1/auth/login/' --header 'Content-Type: application/json' --data-raw '{\"password\": \"admin\", \"email\": \""+name+"@trilogy.com\", \"name\": \""+name+"\"}'"
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    p.wait()
+    s = p.communicate()
+    print(s)
+    return str(s).split(',')[0].split(':')[1].strip('}\"\'')
+
+def createSectorCurl(token):
+    cmd = "curl --location --request POST 'http://127.0.0.1:8080/api/v1/sectors/' --header 'Authorization: Token "+token+"' --header 'Content-Type: application/json' --data-raw '{\"name\": \"Technology1\", \"description\": \"Stonks1\"}'"
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    p.wait()
+    print(p.communicate())
+
+def createStocksCurl(token):
+    cmd = "curl --location --request POST 'http://127.0.0.1:8080/api/v1/stocks/' --header 'Authorization: Token "+token+"' --header 'Content-Type: application/json' --data-raw '{\"name\": \"TCSNEW\", \"price\": 1.00, \"sector\": 0, \"unallocated\": 10000000,\"total_volume\": 50000}'"
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    p.wait()
+    print(p.communicate())
+
+def createOrderCurl(token, type_s):
+    cmd = "curl --location --request POST 'http://127.0.0.1:8080/api/v1/orders/' --header 'Authorization: Token "+token+"' --header 'Content-Type: application/json' --data-raw '{\"type\": \""+type_s+"\", \"stock\": \"0\", \"bid_price\": \"1.00\", \"bid_volume\": 1}'"
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    p.wait()
+    print(p.communicate())
+
 if __name__ == '__main__':
-    signupcase3()
+    #signupbuyer('seller')
+
+    buyer = loginbuyer('buyer')
+    print(buyer)
+
+    createSectorCurl(buyer)
+    createStocksCurl(buyer)
+
+    loop = 50000
+    for i in range(loop):
+        createOrderCurl(buyer, 'BUY')
     """
     #signup('user1')
     signup('user2')
