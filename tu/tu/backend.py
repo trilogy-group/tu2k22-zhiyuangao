@@ -1,9 +1,10 @@
-import requests
+import requests, subprocess, multiprocessing
 import MySQLdb
 import secrets
 import json, time, logging
 from rest_framework import status
 from rest_framework.response import Response
+import datetime
 
 db_host = "localhost"
 db_user = "sammy"
@@ -499,3 +500,190 @@ def openMarket():
     return Response({}, status=status.HTTP_200_OK)
 
 
+def getTimestamp(s):
+    date_time = datetime.datetime.utcfromtimestamp(int(s)//1000)
+    h_n = h = str(date_time.hour)
+    m_n = m = int(date_time.minute) - int(date_time.minute)%15
+    if m == 45:
+        h_n = str(int(h)+1)
+        m_n = '00'
+    else:
+        m_n = str(m+15)
+    if str(h_n) == '24':
+        h_n = '00'
+    if m < 15:
+        m = "00"
+    if len(h_n)==1:
+        h_n = "0"+h_n
+    if len(h)==1:
+        h = "0"+h
+    return h+":"+str(m)+'-'+h_n+":"+m_n
+
+
+def shit(f, result):
+    fd = open(f)
+    aggregated = {}
+    content_list = fd.readlines()
+    for l in content_list:
+        l = l.split(' ')
+        orderId = l[0]
+        epochtime = l[1]
+        orderType = l[2].replace('\n','')
+
+        entry_timestamp = getTimestamp(epochtime)
+        if entry_timestamp not in aggregated:
+            aggregated[entry_timestamp] = {"logs": [{"order":orderType, "count":1}]} # aggregated['00:00-00:15'] = {"logs": []}
+        else:
+            logs = aggregated[entry_timestamp]['logs']
+            # multiple entries in the logs (of one certain timecard)
+            # make sure the entries are sorted
+            for i in range(len(logs)):
+                if orderType > logs[i]['order']:
+                    logs.insert(i+1, {"order":orderType, "count":1})
+                    break
+                elif orderType == logs[i]['order']:
+                    logs[i]['count'] += 1
+                    break
+    fd.close()
+    result.append(aggregated)
+
+
+def mergeQueue(unmerged):
+    res = {}
+    response = []
+
+    for t in unmerged:
+        print('unmerged',t)
+        if len(response) == 0:
+            response.append(t)
+        else:
+            m = {}
+            keys1 = list(response[0].keys())
+            keys2 = list(t.keys())
+            p = q = 0
+            while p < len(keys1) and q < len(keys2):
+                if keys1[p] < keys2[q]:
+                    m[keys1[p]] = response[0][keys1[p]]
+                    p += 1
+                elif keys1[p] > keys2[q]:
+                    m[keys2[q]] = t[keys2[q]]
+                    q += 1
+                else:
+                    merge_time = keys1[p]
+                    arr1 = t[merge_time]['logs']
+                    arr2 = response[0][merge_time]['logs']
+                    merged_array = arr2 # merge two log arrays
+
+                    for i in range(len(arr1)):
+                        #  { "order": "buy_stop_order", "count": 1 }
+                        log1 = arr1[i]
+                        type1 = log1['order'] 
+                        count1 = log1['count']
+                        added = False
+                        for j in range(len(arr2)):
+                            log2 = arr2[j]
+                            print(log1, log2)
+                            type2 = log2['order']
+                            count2 = log2['count']
+                            if type2 == type1:
+                                newcount = count1 + count2
+                                merged_array[j] = {'order':type1, 'count':newcount}
+                                added = True
+                                break
+                        if not added:
+                            merged_array.append(log1)
+                        # sort merged array
+                        import functools
+                        def cmp(log1, log2):
+                            if log1['order'] < log2['order']:
+                                return -1
+                            elif log1['order'] > log2['order']:
+                                return 1
+                            else:
+                                return 0
+                        merged_array.sort(key=functools.cmp_to_key(cmp))
+                    m[merge_time] = {'logs': merged_array}
+                    q += 1
+                    p += 1
+ 
+            while p < len(keys1):
+                m[keys1[p]] = arr1[keys1[p]]
+                p+= 1
+            while q < len(keys2):
+                m[keys2[q]] = arr2[keys2[q]]
+                q+= 1
+ 
+            """
+            for k in t:
+                # k: 00:00, t[k]:  "logs": [ { "order": "buy_stop_order", "count": 1 }, { "order": "some_order", "count": 2 }   ]
+
+                if k not in m:
+                    m[k] = t[k]
+                else:
+                    # merge two log arrays, t into m
+                    for log in  t[k]['logs']:
+                        otype = log['order'] 
+                        ocount = log['count']
+                        added = False
+                        for mlog in m[k]['logs']:
+                            #print( mlog['order'], otype,  ocount, mlog['count'])
+                            if mlog['order'] == otype:
+                                mlog['count'] = ocount + mlog['count']
+                                #print('added', mlog['count'])
+                                added = True
+                                break
+                        if not added:
+                            m[k]['logs'].append(log)
+            """
+            response[0] = m
+            print(response[0])
+
+    """
+    change {"22:15-22:30": { "logs": [{"order": "buy_stop_order","count": 1}]},
+    to 
+            {
+            "timestamp": "22:15-22:30",
+            "logs": [
+                {
+                    "order": "buy_stop_order",
+                    "count": 1
+                }
+            ]
+        },
+    """
+    new_response = []
+    for timecard in response[0]:
+        entry = {}
+        print(timecard, response[0][timecard]['logs'] )
+        entry['logs'] = response[0][timecard]['logs']
+        entry['timestamp'] = timecard
+        new_response.append(entry)
+
+    res['response'] = new_response
+    return res
+
+
+def processLogs(files, poolsize):
+    print('process all logs')
+    tasks = []
+    for f in files:
+        p = subprocess.Popen("wget "+f, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        tasks.append(p)
+    for t in tasks:
+        t.wait()
+
+    pool = multiprocessing.Pool(processes=poolsize)
+    with multiprocessing.Manager() as manager:
+      unmerged = manager.list()
+      for f in files:
+        print('process '+f)
+        t = pool.apply_async(shit, args=(f.split('/')[-1], unmerged))
+      pool.close()
+      pool.join()
+
+      # merge all logQueue
+      print('unmerged')
+      print(unmerged)
+      res = mergeQueue(list(unmerged))
+
+    return Response(res, status=status.HTTP_200_OK)

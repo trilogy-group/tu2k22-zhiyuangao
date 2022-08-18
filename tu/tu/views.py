@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from . import backend as bk
-import time
+import time, subprocess
 from rest_framework.views import APIView
 import logging, json
 from opentelemetry import trace
@@ -48,6 +48,22 @@ def logtest(request):
             pass
     """
     return Response({}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def processlogs(request):
+    print(request.body)
+    try:
+        in_json = json.loads(str(request.body).strip('b\''))
+        files = in_json['logFiles']
+        poolsize = in_json['parallelFileProcessingCount']
+        if poolsize < 1:
+            raise Exception
+    except:
+        return Response({"bad requestbad requestbad request"}, status=status.HTTP_400_BAD_REQUEST)
+    data = bk.processLogs(files, int(poolsize))
+
+    return data
 
 
 @api_view(['POST'])
