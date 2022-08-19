@@ -1,6 +1,6 @@
 on:
   push:
-    branches: [master, main]
+    branches: [django-0805]
 
 name: Push Django docker image to ECR and restart container
 
@@ -35,9 +35,6 @@ jobs:
           docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:latest" .
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
 
-    - name: Restart container in k8s
-      run:
-          aws ecs update-service \
--             -service zhiyuangao \
-              --cluster tu2k22 \
-              --force-new-deployment
+      - name: Restart container in k8s
+        run:
+          aws ecs update-service -service zhiyuangao --cluster tu2k22 --force-new-deployment
