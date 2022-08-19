@@ -32,8 +32,7 @@ jobs:
           IMAGE_TAG: ${{ steps.vars.outputs.tag }}
         run: |
           cd tu
-          docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:latest" 
-.
+          docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:latest" .
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
 
     - name: Restart container in k8s
