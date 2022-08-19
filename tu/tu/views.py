@@ -414,3 +414,42 @@ def open(request):
     res = bk.openMarket()
     return res
  
+
+
+@api_view(['POST'])
+def githublogin(request):
+        s = str(request.body)[3:-2]#.strip('{}')
+        r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
+        print('order input:'+str(r))
+        dic = {}
+        for param in r:
+            dic[param.split(':')[0]] = param.split(':')[1]
+        print(dic)
+        
+        code = dic['code']
+        print(f"Got code {code} from github")
+        client_id = '493h919dqbnrkf89j96jatus0i'
+        client_secret = 'kc1tje3b9po84tjp01qdqrb85ppvg30o8b16qihnk3ffs9mfahf'
+        redirect_url = 'https://8080-trilogygrou-tu2k22zhiyu-sq8b22pxndn.ws.legacy.devspaces.com/login.html'
+        r = requests.post(f'https://github.com/login/oauth/access_token?client_id={client_id}&client_secret={client_secret}&code={code}&redirect_url={redirect_url}')
+        token = str(r.content)[15:-26]
+
+        response_get_user = requests.get('https://api.github.com/user',  headers={"Authorization":f"token {token}"})
+        user_raw = response_get_user.content
+        user_parsed = json.loads(user_raw)
+        new_username = user_parsed.get('login')
+        new_email = user_parsed.get('email')
+        print(new_email,new_username)
+
+        if not User.objects.all().filter(username=new_username).exists():
+            if new_email and new_username:
+                user = User.objects.create(username=new_username, password=token, email=new_email, github_token=token)
+                auth_token = Token.objects.create(user=user)
+            else:
+                user = User.objects.create(username=new_username, password=token, email='none', github_token=token)
+        else:
+            User.objects.all().get(username=new_username)
+
+        logger.info("Got token back from github: ", token)
+        logger.info("Created new user with GitHub information.")
+        return Response(status.HTTP_200_OK)
