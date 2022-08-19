@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: tu2k22
-  name: zhiyuan-django
+  name: zhiyuan-django-new
   labels:
     app: zhiyuan-django
 spec:

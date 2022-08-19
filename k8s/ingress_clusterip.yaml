@@ -8,6 +8,8 @@ metadata:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}, {"HTTPS":8000}]'
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:280022023954:certificate/24730ea7-b545-4a72-97fa-bbab39ef3b1f
+    external-dns.alpha.kubernetes.io/hostname: zyn-k8s.tu2k22.devfactory.com
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/sectors
 
 spec:
   ingressClassName: alb
