@@ -35,6 +35,8 @@ urlpatterns = [
     path('api/v1/orders/', api_views.orders),
     path('api/v1/match/', api_views.match),
     path('api/v1/process-logs/', api_views.processlogs),
+    path('api/v1/market/open', api_views.open),
+    path('github/login', api_views.githublogin),
     path('api/', include(router.urls)),
 ]
 

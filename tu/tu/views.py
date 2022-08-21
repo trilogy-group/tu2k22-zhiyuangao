@@ -68,7 +68,7 @@ def processlogs(request):
 
 @api_view(['POST'])
 def register(request):
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.CRITICAL)
     logging.debug('\n-- sign up new user --')
     logging.debug(request.body)
     logging.debug(str(request.body)[1:])
@@ -238,7 +238,7 @@ def sectorsUpdate(request, id=None, *args, **kwargs):
         #    return Response("description or name not found", status=status.HTTP_400_BAD_REQUEST)
         try:
             token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
-            logging.debug('Get Token')
+            print('sector patch')
             if token == None:
                 raise Exception
         except Exception as e:
@@ -252,6 +252,7 @@ def sectorsUpdate(request, id=None, *args, **kwargs):
             dic = {}
             for param in r:
                 dic[param.split(':')[0]] = param.split(':')[1]
+            print(dic)
  
             if 'description' in dic:
                 des = dic['description']
@@ -347,7 +348,7 @@ def orders(request):
         logging.debug('GOT Token')
     except Exception as e:
         logging.debug('No Token')
-        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+        return Response("Need token to proceed", status=status.HTTP_401_UNAUTHORIZED)
  
     if request.method == "GET":
         # List all orders
@@ -385,6 +386,7 @@ def orders(request):
 
 @api_view(['GET'])
 def match(request):
+    return Response('TODO', status=status.HTTP_200_OK)
     logging.info('\n\n---- MATCH ---- ')
     try:
         token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
@@ -401,6 +403,7 @@ def match(request):
 
 @api_view(['POST'])
 def open(request):
+    return Response('', status=status.HTTP_200_OK)
     logging.info('\n\n---- OPEN ---- ')
     try:
         token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
@@ -418,6 +421,7 @@ def open(request):
 
 @api_view(['POST'])
 def githublogin(request):
+        return Response(status.HTTP_200_OK)
         s = str(request.body)[3:-2]#.strip('{}')
         r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
         print('order input:'+str(r))
