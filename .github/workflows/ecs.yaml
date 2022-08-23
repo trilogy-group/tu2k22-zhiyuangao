@@ -36,4 +36,4 @@ jobs:
 
       - name: Restart container in k8s
         run:
-          aws ecs update-service -service zhiyuangao --cluster tu2k22 --force-new-deployment
+          aws ecs update-service --service zhiyuangao-svc --cluster tu2k22 --force-new-deployment
