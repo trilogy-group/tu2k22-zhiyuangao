@@ -1,6 +1,6 @@
 import yfinance as yf
 import matplotlib.pyplot as plt
-import seaborn
+#import seaborn
 import pandas
 from predict import predict
 
@@ -97,8 +97,6 @@ def distance(c1, c2):
     for i in range(min(len(c1), len(c2))):
         d += (c1[i] - c2[i])*(c1[i] - c2[i])
     return d
-
-
  
 
 def runAll():
