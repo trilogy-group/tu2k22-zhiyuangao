@@ -20,29 +20,41 @@ def rmse_score(predictions, targets):
 
 def linear_regression(train, validate, test):
     X = np.array(list(range(len(train)))).reshape(-1,1)
-    Y = train.values.reshape(-1, 1)
+    y_train = train.values.reshape(-1, 1)
+    X_test = np.array(list(range(len(test)))).reshape(-1,1)
+    y_test = test.values.reshape(-1, 1)
+
     linear_regressor = LinearRegression()
-    linear_regressor.fit(X, Y)
+    linear_regressor.fit(X, y_train)
     Y_pred = linear_regressor.predict(X)
-    plt.scatter(X, Y)
+    plt.scatter(X, y_train)
     plt.xlabel("Days")
     plt.ylabel("Growth")
     plt.plot(X, Y_pred, color='red')
     plt.show()
 
-    X_test = np.array(list(range(len(test)))).reshape(-1,1)
-    y_test = test.values.ravel()
-    Y_pred = linear_regressor.predict(X_test)
-    mse = mean_squared_error(Y_pred, y_test)
-    mae = mean_absolute_error(Y_pred, y_test)
-    rmse = rmse_score(Y_pred, y_test)
-    r2 = r2_score(Y_pred, y_test)
+    mse = mean_squared_error(Y_pred, y_train)
+    mae = mean_absolute_error(Y_pred, y_train)
+    rmse = rmse_score(Y_pred, y_train)
+    r2 = r2_score(Y_pred, y_train)
+
+    # Make predictions on the test set
+    X_axis = np.arange(min(X_test), max(X_test), 1)
+    X_axis = X_axis.reshape(len(X_axis), 1)
+    Y_pred = linear_regressor.predict(X_axis)
+
+    plt.scatter(X_test, y_test)
+    plt.xlabel("Days")
+    plt.ylabel("Growth")
+    plt.plot(X_test[:-1], Y_pred, color='red')
+    plt.show()
+
     return {'mse':mse,'mae':mae,'rmse':rmse,'r2':r2}
 
 
 def random_forest(train, validate, test):
     X_train = np.array(list(range(len(train)))).reshape(-1,1)
-    X_test = np.array(list(range(len(test)+1))).reshape(-1,1)
+    X_test = np.array(list(range(len(test)))).reshape(-1,1)
     y_train = train.values.ravel()
     y_test = test.values.ravel()
 
@@ -52,6 +64,7 @@ def random_forest(train, validate, test):
 
     # Visualizing
     X_axis = np.arange(min(X_train), max(X_train), 1)
+    X_axis = np.append(X_axis,len(X_axis))
     X_axis = X_axis.reshape(len(X_axis), 1)
     Y_pred = regressor.predict(X_axis)
  
@@ -62,20 +75,29 @@ def random_forest(train, validate, test):
     plt.title('Random Forest Regression')
     plt.show()
 
-    # MSE of test set
+    # MSE
+    mse = mean_squared_error(Y_pred, y_train)
+    mae = mean_absolute_error(Y_pred, y_train)
+    rmse = rmse_score(Y_pred, y_train)
+    r2 = r2_score(Y_pred, y_train)
+
+    # make predictions
     X_axis = np.arange(min(X_test), max(X_test), 1)
     X_axis = X_axis.reshape(len(X_axis), 1)
     Y_pred = regressor.predict(X_axis)
-    mse = mean_squared_error(Y_pred, y_test)
-    mae = mean_absolute_error(Y_pred, y_test)
-    rmse = rmse_score(Y_pred, y_test)
-    r2 = r2_score(Y_pred, y_test)
+
+    plt.scatter(X_test, y_test)
+    plt.xlabel("Days")
+    plt.ylabel("Growth")
+    plt.plot(X_test[:-1], Y_pred, color='red')
+    plt.show()
+
     return {'mse':mse,'mae':mae,'rmse':rmse,'r2':r2}
 
 
 def xgb_regression(train, validate, test):
     X_train = np.array(list(range(len(train)))).reshape(-1,1)
-    X_test = np.array(list(range(len(test)+1))).reshape(-1,1)
+    X_test = np.array(list(range(len(test)))).reshape(-1,1)
     y_train = train.values.ravel()
     y_test = test.values.ravel()
 
@@ -84,6 +106,7 @@ def xgb_regression(train, validate, test):
 
     # Visualizing
     X_axis = np.arange(min(X_train), max(X_train), 1)
+    X_axis = np.append(X_axis,len(X_axis))
     X_axis = X_axis.reshape(len(X_axis), 1)
     Y_pred = model.predict(X_axis)
  
@@ -95,64 +118,78 @@ def xgb_regression(train, validate, test):
     plt.show()
 
     # MSE
+    mse = mean_squared_error(Y_pred, y_train)
+    mae = mean_absolute_error(Y_pred, y_train)
+    rmse = rmse_score(Y_pred, y_train)
+    r2 = r2_score(Y_pred, y_train)
+    
+    # predict
     X_axis = np.arange(min(X_test), max(X_test), 1)
     X_axis = X_axis.reshape(len(X_axis), 1)
     Y_pred = model.predict(X_axis)
-    mse = mean_squared_error(Y_pred, y_test)
-    mae = mean_absolute_error(Y_pred, y_test)
-    rmse = rmse_score(Y_pred, y_test)
-    r2 = r2_score(Y_pred, y_test)
+
+    plt.scatter(X_test, y_test)
+    plt.xlabel("Days")
+    plt.ylabel("Growth")
+    plt.plot(X_test[:-1], Y_pred, color='red')
+    plt.show()
+
     return {'mse':mse,'mae':mae,'rmse':rmse,'r2':r2}
 
 
 def svm_regression(train, validate, test):
+    #train = train.rolling(5).mean().fillna(0)
+    #test = test.rolling(5).mean().fillna(0)
     lab_enc = preprocessing.LabelEncoder()
 
     X_train = np.array(list(range(len(train)))).reshape(-1,1)
-    X_test = np.array(list(range(len(test)+1))).reshape(-1,1)
+    X_test = np.array(list(range(len(test)))).reshape(-1,1)
     y_train = lab_enc.fit_transform(train.values.ravel())
     y_test = test.values.ravel()
 
-    C = 1.0  # SVM regularization parameter
+    C = 10.0  # SVM regularization parameter
     nu = 0.05
-    gamma = 2.0
+    gamma = 0.07
     #clf = SGDOneClassSVM(nu=nu, shuffle=True, fit_intercept=True, tol=1e-4)
     #clf = svm.SVC(kernel="linear", C=C)
-    #clf = svm.LinearSVC(C=C, max_iter=10000)
-    clf = svm.SVC(kernel="rbf", gamma=0.7, C=C)
+    #clf = svm.LinearSVC(C=C, max_iter=10)
+    clf = svm.SVC(kernel="rbf", gamma=gamma, C=C)
     #clf = svm.SVC(kernel="poly", degree=3, gamma="auto", C=C)
     clf.fit(X_train, y_train)
 
     # cross-validate
-    X_validate = np.array(list(range(len(validate)))).reshape(-1,1)
-    y_validate = lab_enc.fit_transform(validate.values.ravel())
-    cv = KFold(n_splits=10, random_state=1, shuffle=True)
-    scores = cross_val_score(clf, X_validate, y_validate, cv=cv)
+    #X_validate = np.array(list(range(len(validate)))).reshape(-1,1)
+    #y_validate = lab_enc.fit_transform(validate.values.ravel())
+    #cv = KFold(n_splits=5, random_state=1, shuffle=True)
+    #scores = cross_val_score(clf, X_validate, y_validate, cv=cv)
 
     # predict training set
     X_axis = np.arange(min(X_train), max(X_train), 1)
+    X_axis = np.append(X_axis,len(X_axis))
     X_axis = X_axis.reshape(len(X_axis), 1)
-
     Y_pred = clf.predict(X_axis)
-
-    # predict test set
-    X_axis_test = np.arange(min(X_test), max(X_test), 1)
-    X_axis_test = X_axis_test.reshape(len(X_axis_test), 1)
-
-    Y_pred_test = clf.predict(X_axis_test)
-    n_error_train = Y_pred[Y_pred == -1].size
-    n_error_test = Y_pred_test[Y_pred_test == -1].size
-
     plt.scatter(X_train, y_train, color='red')
     plt.xlabel("Days")
     plt.ylabel("Growth")
     plt.plot(X_axis, Y_pred, color='blue')
     plt.title('SVM')
     plt.show()
-    mse = mean_squared_error(Y_pred_test, y_test)
-    mae = mean_absolute_error(Y_pred_test, y_test)
-    rmse = rmse_score(Y_pred_test, y_test)
-    r2 = r2_score(Y_pred_test, y_test)
+
+    # metrics MSE
+    mse = mean_squared_error(Y_pred, y_train)
+    mae = mean_absolute_error(Y_pred, y_train)
+    rmse = rmse_score(Y_pred, y_train)
+    r2 = r2_score(Y_pred, y_train)
+
+    # predict test set
+    X_axis = np.arange(min(X_test), max(X_test), 1)
+    X_axis = X_axis.reshape(len(X_axis), 1)
+    Y_pred = clf.predict(X_axis)
+    plt.scatter(X_test, y_test)
+    plt.xlabel("Days")
+    plt.ylabel("Growth")
+    plt.plot(X_test[:-1], Y_pred, color='red')
+    plt.show()
     return {'mse':mse,'mae':mae,'rmse':rmse,'r2':r2}
 
 
@@ -200,19 +237,11 @@ def predict(name, change):
     err_svm = svm_regression(train, validate, test)
 
     # Step 4. box plot
-    modelerr = pd.DataFrame()
-    modelerr['RMSE'] = [err_lr['rmse'], err_rfr['rmse'], err_xgb['rmse'], err_svm['rmse']]
-    modelerr['MAE'] = [err_lr['mae'], err_rfr['mae'], err_xgb['mae'], err_svm['mae']]
-    modelerr['R2'] = [err_lr['r2'], err_rfr['r2'], err_xgb['r2'], err_svm['r2']]
-    modelerr.rename(index = {0:"LR"}, inplace=True)
-    modelerr.rename(index = {1:"RF"}, inplace=True)
-    modelerr.rename(index = {2:"SVM"}, inplace=True)
-    modelerr.rename(index = {3:"XGB"}, inplace=True)
-    modelerr.iloc[::,0:1].boxplot()
-    plt.show()
-    modelerr.iloc[::,1:2].boxplot()
-    plt.show()
-    modelerr.iloc[::,2:3].boxplot()
-    plt.show()
+    for method in ['rmse', 'mae', 'r2']:
+        fig, ax = plt.subplots()
+        data = [err_lr[method], err_rfr[method], err_xgb[method], err_svm[method]]
+        print(data)
+        ax.boxplot(data)
+        plt.show()
 
     # Step 5. Predict already done

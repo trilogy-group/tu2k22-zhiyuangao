@@ -93,6 +93,7 @@ def run(name):
     
 
 def distance(c1, c2):
+    # c1 1%, c2 2.5%
     d = 0
     for i in range(min(len(c1), len(c2))):
         d += (c1[i] - c2[i])*(c1[i] - c2[i])
