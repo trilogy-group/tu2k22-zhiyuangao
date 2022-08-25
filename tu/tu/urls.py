@@ -33,8 +33,10 @@ urlpatterns = [
     path('api/v1/stocks/', api_views.stocks),
     path('api/v1/stocks/<int:id>/', api_views.getStockById),
     path('api/v1/orders/', api_views.orders),
-    path('api/v1/match/', api_views.match),
+    path('api/v1/orders/match/', api_views.match),
     path('api/v1/process-logs/', api_views.processlogs),
+    path('api/v1/recommend/', api_views.recommend),
+    path('api/v1/emailurl/', api_views.emailurl),
     path('api/', include(router.urls)),
 ]
 

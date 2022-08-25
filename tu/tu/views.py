@@ -68,7 +68,7 @@ def processlogs(request):
 
 @api_view(['POST'])
 def register(request):
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.INFO)
     logging.debug('\n-- sign up new user --')
     logging.debug(request.body)
     logging.debug(str(request.body)[1:])
@@ -77,7 +77,7 @@ def register(request):
  
     logging.debug('parsed request')
     print(r)
-    logging.info(r)
+    #logging.info(r)
 
     if 'email' not in str(request.body) or 'password' not in str(request.body) \
             or 'name' not in str(request.body):
@@ -87,7 +87,7 @@ def register(request):
       dic = {}
       for param in r:
           dic[param.split(':')[0]] = param.split(':')[1]
-      logging.info(dic)
+      #logging.info(dic)
  
       # assume there are no = in names
       # assume there are no = in password
@@ -111,7 +111,7 @@ def login(request):
     s = str(request.body)[3:-2]#.strip('{}')
     r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
  
-    logging.info("login")
+    #logging.info("login")
     logging.info(str(r))
 
     if 'email' not in str(request.body) or 'password' not in str(request.body):
@@ -347,7 +347,7 @@ def orders(request):
         logging.debug('GOT Token')
     except Exception as e:
         logging.debug('No Token')
-        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+        return Response("Need token to proceed", status=status.HTTP_401_UNAUTHORIZED)
  
     if request.method == "GET":
         # List all orders
@@ -380,10 +380,9 @@ def orders(request):
         except Exception as e:
             print(e)
             return Response("Failed to create order", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
- 
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 def match(request):
     logging.info('\n\n---- MATCH ---- ')
     try:
@@ -413,7 +412,6 @@ def open(request):
 
     res = bk.openMarket()
     return res
- 
 
 
 @api_view(['POST'])
@@ -453,3 +451,43 @@ def githublogin(request):
         logger.info("Got token back from github: ", token)
         logger.info("Created new user with GitHub information.")
         return Response(status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def recommend(request):
+        try:
+            response = {
+                "id": 0,
+                "stock": 'stock1',
+                "name": 'zhiyuan',
+                "price": 10,
+                "recommendation": 100,
+                "email": 'zhiyuan.gao@trilogy.com',
+            }
+            return Response(response, status=status.HTTP_200_OK)
+        except():
+            return HttpResponse({}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def emailurl(request):
+        s = str(request.body)[3:-2]#.strip('{}')
+        r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
+
+        print('order input:'+str(r))
+        dic = {}
+        for param in r:
+           dic[param.split(':')[0]] = param.split(':')[1]
+        print(dic)
+        request_id = dic['request_id']
+        print(request_id)
+        #callback_url = request.GET.get('url')
+        callback_url = dic['url']
+        print(callback_url)
+        if request_id and callback_url:
+            response=requests.post(url=callback_url, \
+                json={"request_id": str(request_id), "event":{"triggerFlow": "trigger"}})
+            print(response.content)
+            return Response(status.HTTP_200_OK)
+        return Response(status.HTTP_400_BAD_REQUEST)
+

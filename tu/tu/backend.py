@@ -65,7 +65,7 @@ def register(email, password, name):
             ", "+ str(0) + ");"
     #print(cmd)
     c.execute(cmd)
-    print(c.fetchall())
+    #print(c.fetchall())
     db.commit()
     db.close()
 
@@ -106,7 +106,7 @@ def profile(token):
     print(login_session, token)
     # authenticate
     data = login_session[token].data
-    print(data)
+    #print(data)
     for k in data:
         data[k] = str(data[k])
     return data
@@ -205,7 +205,7 @@ def sectorsUpdate(id, name, description, token):
     logging.debug('plan to update name:'+str(name)+', description:'+str(description))
     c.execute("SELECT * FROM sectors WHERE id = "+str(id)+";")
     r = c.fetchall()
-    print("select result", r)
+    #print("select result", r)
     if len(r) == 0:
         return Response({'message':"No sector with id "+str(id)}, status.HTTP_406_NOT_ACCEPTABLE)
     
@@ -220,7 +220,7 @@ def sectorsUpdate(id, name, description, token):
         cmd = "UPDATE sectors set description = \"" + \
             description+"\" WHERE id = "+str(id) + ';'
     c.execute(cmd)
-    print(c.fetchall())
+    #print(c.fetchall())
     db.commit() 
     c.execute("SELECT * FROM sectors WHERE id = "+str(id)+";")
     r = c.fetchall()[0]
@@ -262,11 +262,8 @@ def listStocks():
 
 
 def stocksCreate(name, price, sector_id, unallocated, total_volume, token):
-    #print('stocksCreate: '+name,  price, sector_id, unallocated, total_volume,)
+    print('stocksCreate: '+name, 'price:', price, 'sector id:', sector_id, 'unallocated', unallocated,'tot vol:', total_volume)
     #print(login_session)
-    logging.info('create stock')
-    logging.info('name:'+name)
-    logging.info('price:'+str(price))
  
     db = get_connect()
     c = db.cursor()
@@ -320,7 +317,7 @@ def getStockById(id):
     if len(r) == 0:
         return Response({}, status=status.HTTP_404_NOT_FOUND)
     data = r[0]
-    print(data)
+    #print(data)
     sector_id = data[1]
     name = data[2]
     total_volume = data[3]
@@ -378,7 +375,7 @@ def getOrders(token):
             'updated_on': updated_at })
 
 
-    print(result)
+    #print(result)
     return Response(result, status=status.HTTP_200_OK)
 
 
@@ -398,14 +395,9 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
     db = get_connect()
     c = db.cursor()
 
-    c.execute("SELECT * FROM stocks;")
+    c.execute("SELECT * FROM stocks WHERE id = "+str(stock)+";")
     r = c.fetchall()
-    flag = False
-    for db_stock_entry in r:
-        if int(db_stock_entry[0]) == int(stock):
-            flag = True
-            break
-    if flag == False:
+    if len(r) == 0:
         return Response('Invalid Stock ID', status=status.HTTP_400_BAD_REQUEST)
     logging.debug('stock id'+str(stock)+', user id: '+str(user_id))
 
@@ -418,13 +410,22 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
             # this shouldn't happen because we already had the token -- aka user added
             return Response('User does not exist', status=status.HTTP_404_NOT_FOUND)
         available_funds = float(r[0][0])
-        logging.debug('available funds: '+str(available_funds))
-        if available_funds < float(bid_price):
+        print('available funds: '+str(available_funds))
+        if available_funds < float(bid_price)* float(bid_volume):
             logging.debug('Insufficient funds')
-            return Response('Insufficient funds', status=status.HTTP_401_UNAUTHORIZED)
+            return Response('Insufficient funds', status=status.HTTP_400_BAD_REQUEST)
     elif type == 'SELL':
-        logging.debug('SELL')
-        return Response('TODO', status=status.HTTP_404_NOT_FOUND)
+        cmd = "SELECT volume,bld_price from holdings WHERE user_id = "+str(user_id) +" AND stock_id ="+str(stock)+";"
+        c.execute(cmd)
+        r = c.fetchall()
+        if len(r) == 0:
+            # no such holdings
+            return Response('no such holding', status=status.HTTP_400_BAD_REQUEST)
+        else:
+            hold_vol = int(r[0][0])
+            hold_p = float(str(r[0][1]).strip('Decimal(\'\')'))
+            if hold_vol < int(bid_volume):
+                return Response('Not enough volume to sell', status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response('Unknow order type', status=status.HTTP_400_BAD_REQUEST)
 
@@ -470,7 +471,7 @@ def ordersCreate(stock, type, bid_price, bid_volume, token):
     print('create order insert into db',r)
     db.commit()
     db.close()
-    return Response({'Success'}, status=status.HTTP_200_OK)
+    return Response({'Success'}, status=status.HTTP_201_CREATED)
 
 
 def match():
@@ -479,19 +480,255 @@ def match():
  
     # sort buyer descending
     c.execute("SELECT * FROM orders WHERE type=\"BUY\" ORDER BY bid_price DESC;")
-    r = c.fetchall()
-    logging.debug(r)
+    buy_orders = c.fetchall()
+    print(buy_orders)
 
     # sort seller ascending
     c.execute("SELECT * FROM orders WHERE type=\"SELL\" ORDER BY bid_price ASC;")
-    r = c.fetchall()
-    logging.debug(r)
+    sell_orders = c.fetchall()
+    print(sell_orders)
 
-    # Also need the market price
+    #In the initial phase, when no users own any stocks and hence can’t sell any, the buy orders will be fulfilled by looking at the available stocks in the respective stock row. This will also apply in cases where no sell order is low enough to match any of the buy orders. Eg. consider the following situation
+    if len(sell_order) == 0 and len(buy_orders)!=0:
+        # buy from the market
+        for b in buy_orders:
+            cmd = 'select * from stocks where id = '+str(b[2])+' AND price <= '+ str(b[7])+';'
+            c.execute(cmd)
+            r = c.fetchall()
+            if len(r) == 0:
+                continue
+            elif int(r[0][4]) > (int(b[8])-int(b[9])):
+                print('buy this stock',b[8])
+                volume_to_execute = int(b[8])-int(b[9])
+                volume_left = int(r[0][4]) - int(b[8]) + int(b[9]) #left in stocks
+                price = float(b[7])
+                stock_id = int(b[2])
+                user_id = int(b[1])
+                order_id = int(b[0])
+                # change user funds, stop buying if no moeny
+                cmd = "select available_funds from users where id="+str(user_id)+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                new_funds = float(r[0][0]) - volume_to_execute * price
+                if new_funds < 0:
+                    continue
+                cmd = "update users set available_funds = "+new_funds+" where id ="+str(b[1])+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                # update stock price
+                unallocated =int(r[0][4]) - int(b[8]) + int(b[9])
+                cmd="update stocks set price = "+str(b[7])+",unallocated="+str(unallocated)+" where id="+str(stock_id)+";"
+                c.execute(cmd)
+                r = c.fetchall()
+                # change user holdings
+                cmd = 'select volume from holdings where user_id='+str(user_id)+' AND stock_id='+str(stock_id)+";"
+                c.execute(cmd)
+                r = c.fetchall()
+                old_volume = int(r[0][0])
+                new_volume = old_volume + volume_to_execute
+                cmd = "update holdings set bought_on="+str(time.strftime('%Y-%m-%d'))+",price="+str(price)+"volume="+new_volume+" WHERE user_id="+str(user_id) + \
+                        " AND stock_id="+str(stock_id)+";"
+                c.execute(cmd)
+                # change order executed volume
+                cmd = 'update orders set executed_volume='+b[8]+' WHERE id='+str(order_id)+';'
+                db.commit()
+            else:
+                # partial transaction
+                volume_to_execute = int(r[0][4])
+                order_executed_volume = int(b[9]) + volume_to_execute #left in buy order
+                price = float(b[7])
+                stock_id = int(b[2])
+                user_id = int(b[1])
+                order_id = int(b[0])
+                # change user funds, stop buying if no moeny
+                cmd = "select available_funds from users where id="+str(user_id)+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                new_funds = float(r[0][0]) - volume_to_execute * price
+                if new_funds < 0:
+                    continue
+                cmd = "update users set available_funds = "+new_funds+" where id ="+str(b[1])+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                # update stock price
+                unallocated = 0
+                cmd="update stocks set price = "+str(price)+",unallocated="+str(unallocated)+" where id="+str(stock_id)+";"
+                c.execute(cmd)
+                r = c.fetchall()
+                # update buyer holdings
+                cmd = 'select volume from holdings where user_id='+str(user_id)+' AND stock_id='+str(stock_id)+";"
+                c.execute(cmd)
+                r = c.fetchall()
+                old_volume = int(r[0][0])
+                new_volume = old_volume + volume_to_execute
+                cmd = "update holdings set bought_on="+str(time.strftime('%Y-%m-%d'))+",price="+str(price)+"volume="+new_volume+" WHERE user_id="+str(user_id) + \
+                        " AND stock_id="+str(stock_id)+";"
+                c.execute(cmd)
+                c.fetchall()
+                # update buy order executed volume
+                cmd = 'update orders set executed_volume='+str(order_executed_volume)+' WHERE id='+str(order_id)+';'
+                c.execute(cmd)
+                c.fetchall()
+                db.commit()
 
-    # Order match, give it all the buyers and sellers -- only do the business logic
-    # encapsulation --> better for portibility e.g., lambda deployment
-    # aka. decoupling --> unit tests made easier
+        return Response('initial match', status=status.HTTP_200_OK)
+    else:
+        return Response('nothing to match', status=status.HTTP_200_OK)
+    #Order matches when buy_bid_price >= sell_bid_price
+    p = q = 0
+    while p < len(buy_orders) and q < len(sell_orders):
+        # match
+        stock_id = str(buy_orders[p][2])
+
+        buy_price = float(buy_orders[p][7])
+        buy_vol = int(buy_orders[p][8])
+        buy_executed = int(buy_orders[p][9])
+        buy_updated_time = str(buy_orders[p][5])
+        buy_order_id = str(buy_orders[p][0])
+        user_id = str(buy_orders[p][1])
+
+        sell_price = float(sell_orders[q][7])
+        sell_vol = int(sell_orders[q][8])
+        sell_executed = int(sell_orders[q][9])
+        sell_updated_time = str(sell_orders[q][5])
+        sell_order_id = str(sell_orders[q][0])
+        sell_user_id = str(sell_order[q][1])
+
+        if float(buy_price) >= float(sell_price):
+           print('matched')
+           if (sell_vol-sell_executed) >= (buy_vol-buy_executed):
+                # buy order fillfulled, sell order (partially) filfulled
+                volume_to_execute = buy_vol - buy_executed
+                volume_left = sell_vol - sell_executed - volume_to_execute #left in sell order
+                # compare time, price follows lastest order
+                if sell_updated_time.replace('-','') > buy_updated_time.replace('-',''):
+                    price = sell_price
+                else:
+                    price = buy_price
+                # change buyer funds
+                cmd = "select available_funds from users where id="+str(user_id)+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                new_funds = float(r[0][0]) - volume_to_execute * price
+                if new_funds < 0:
+                    q += 1 # not buying, check next sell
+                    continue
+                cmd = "update users set available_funds = "+new_funds+" where id ="+str(b[1])+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                # change seller funds
+                cmd = "select available_funds from users where id="+str(sell_orders[q][0])+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                new_funds = float(r[0][0]) + volume_to_execute * price
+                cmd = "update users set available_funds = "+new_funds+" where id ="+str(sell_orders[q][0])+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                # update buy volume
+                new_buy_executed_volume = buy_vol
+                cmd = "update orders set executed_volume="+str(new_buy_executed_volume)+ " where id="+str(buy_order_id)+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                # update sell volume
+                new_sell_executed = sell_executed + buy_vol
+                cmd="update orders executed_volume="+str(new_sell_executed)+" where id="+str(sell_order_id)+";"
+                c.execute(cmd)
+                r = c.fetchall()
+                # update buyer holdings
+                cmd = 'select volume from holdings where user_id='+str(user_id)+' AND stock_id='+str(stock_id)+";"
+                c.execute(cmd)
+                buy_holding_volume = int(c.fetchall()[0][0])
+                new_buy_holding_volume += volume_to_execute
+                cmd = "update holdings set bought_on="+str(time.strftime('%Y-%m-%d'))+",price="+str(price)+"volume="+ \
+                        str(new_buy_holding_volume)+" WHERE user_id="+str(user_id) + \
+                        " AND stock_id="+str(stock_id)+";"
+                c.execute(cmd)
+                c.fetchall()
+                # change seller holdings
+                cmd = 'select volume from holdings where user_id='+str(sell_user_id)+' AND stock_id='+str(stock_id)+';'
+                c.execute(cmd)
+                seller_holding_volume = c.fetchall()[0][0]
+                new_volume = seller_holding_volume - volume_to_execute
+                cmd = "update holdings set bought_on="+str(time.strftime('%Y-%m-%d'))+",price="+str(price)+"volume="+ \
+                        str(new_volume) + " WHERE user_id"+str(sell_user_id) + \
+                        " AND stock_id=" + str(stock_id)+';'
+                c.execute(cmd)
+                c.fetchall()
+                db.commit()
+
+                p += 1
+                if sell_vol == (buy_vol-buy_executed):
+                    q += 1
+                    continue
+                else:
+                    q = 0
+           else:
+                # sell order fillfulled, buy order partially
+                volume_to_execute = sell_vol - sell_executed
+                volume_left = buy_vol - buy_executed - volume_to_execute #left in buy order
+                # compare time, price follows lastest order
+                if sell_updated_time.replace('-','') > buy_updated_time.replace('-',''):
+                    price = sell_price
+                else:
+                    price = buy_price
+                # change buyer funds
+                cmd = "select available_funds from users where id="+str(user_id)+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                new_funds = float(r[0][0]) - volume_to_execute * price
+                if new_funds < 0:
+                    q += 1 # not buying, check next sell
+                    continue
+                cmd = "update users set available_funds = "+new_funds+" where id ="+str(b[1])+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                # change seller funds
+                cmd = "select available_funds from users where id="+str(sell_orders[q][0])+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                new_funds = float(r[0][0]) + volume_to_execute * price
+                cmd = "update users set available_funds = "+new_funds+" where id ="+str(sell_orders[q][0])+';'
+                c.execute(cmd)
+                r = c.fetchall()
+                # update buy volume
+                new_buy_executed_volume = buy_executed+volume_to_execute
+                cmd = "update orders set executed_volume="+str(new_buy_executed_volume)+ " where id="+str(buy_order_id)+';'
+                c.execute(cmd)
+                # update sell volume
+                new_sell_executed = sell_executed + volume_to_execute
+                cmd="update orders executed_volume="+str(new_sell_executed)+" where id="+str(sell_order_id)+";"
+                c.execute(cmd)
+                r = c.fetchall()
+                # update buyer holdings
+                cmd = 'select volume from holdings where user_id='+str(user_id)+' AND stock_id='+str(stock_id)+";"
+                c.execute(cmd)
+                r = int(c.fetchall()[0][0]) + int(volume_to_execute)
+                cmd = "update holdings set bought_on="+str(time.strftime('%Y-%m-%d'))+",price="+str(price)+"volume="+ \
+                        str(r)+" WHERE user_id="+str(user_id) + \
+                        " AND stock_id="+str(stock_id)+";"
+                c.execute(cmd)
+                c.fetchall()
+                # change seller holdings
+                cmd = 'select volume from holdings where user_id='+str(sell_user_id)+' AND stock_id='+str(stock_id)+';'
+                c.execute(cmd)
+                seller_holding_volume = c.fetchall()[0][0]
+                new_volume = seller_holding_volume - volume_to_execute
+                cmd = "update holdings set bought_on="+str(time.strftime('%Y-%m-%d'))+",price="+str(price)+"volume="+ \
+                        str(new_volume) + " WHERE user_id"+str(sell_user_id) + \
+                        " AND stock_id=" + str(stock_id)+';'
+                c.execute(cmd)
+                c.fetchall()
+                db.commit()
+
+                q+= 1
+
+    # no buyer, only seller
+    if p == len(buy_orders) and q < len(sell_orders):
+        print('only sell orders left')
+    # no seller, only buyer
+    else:
+        print('no seller onnly buyer')
+
     db.close()
     return Response({}, status=status.HTTP_200_OK)
 
@@ -553,7 +790,7 @@ def mergeQueue(unmerged):
     response = []
 
     for t in unmerged:
-        print('unmerged',t)
+        #print('unmerged',t)
         if len(response) == 0:
             response.append(t)
         else:
@@ -582,7 +819,7 @@ def mergeQueue(unmerged):
                         added = False
                         for j in range(len(arr2)):
                             log2 = arr2[j]
-                            print(log1, log2)
+                            #print(log1, log2)
                             type2 = log2['order']
                             count2 = log2['count']
                             if type2 == type1:
@@ -636,7 +873,7 @@ def mergeQueue(unmerged):
                             m[k]['logs'].append(log)
             """
             response[0] = m
-            print(response[0])
+            #print(response[0])
 
     """
     change {"22:15-22:30": { "logs": [{"order": "buy_stop_order","count": 1}]},
@@ -654,7 +891,7 @@ def mergeQueue(unmerged):
     new_response = []
     for timecard in response[0]:
         entry = {}
-        print(timecard, response[0][timecard]['logs'] )
+        #print(timecard, response[0][timecard]['logs'] )
         entry['logs'] = response[0][timecard]['logs']
         entry['timestamp'] = timecard
         new_response.append(entry)
@@ -664,7 +901,7 @@ def mergeQueue(unmerged):
 
 
 def processLogs(files, poolsize):
-    print('process all logs')
+    #print('process all logs')
     tasks = []
     for f in files:
         p = subprocess.Popen("wget "+f, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -676,14 +913,12 @@ def processLogs(files, poolsize):
     with multiprocessing.Manager() as manager:
       unmerged = manager.list()
       for f in files:
-        print('process '+f)
+        #print('process '+f)
         t = pool.apply_async(shit, args=(f.split('/')[-1], unmerged))
       pool.close()
       pool.join()
 
       # merge all logQueue
-      print('unmerged')
-      print(unmerged)
       res = mergeQueue(list(unmerged))
 
     return Response(res, status=status.HTTP_200_OK)
