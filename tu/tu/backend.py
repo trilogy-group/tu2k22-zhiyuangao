@@ -7,7 +7,7 @@ from rest_framework.response import Response
 import datetime
 
 db_host = "localhost"
-db_user = "sammy"
+db_user = "root"
 db_name = "tu"
 password = "Ab_19100204"
 port = 3306
@@ -489,7 +489,7 @@ def match():
     print(sell_orders)
 
     #In the initial phase, when no users own any stocks and hence can’t sell any, the buy orders will be fulfilled by looking at the available stocks in the respective stock row. This will also apply in cases where no sell order is low enough to match any of the buy orders. Eg. consider the following situation
-    if len(sell_order) == 0 and len(buy_orders)!=0:
+    if len(sell_orders) == 0 and len(buy_orders)!=0:
         # buy from the market
         for b in buy_orders:
             cmd = 'select * from stocks where id = '+str(b[2])+' AND price <= '+ str(b[7])+';'
@@ -512,25 +512,35 @@ def match():
                 new_funds = float(r[0][0]) - volume_to_execute * price
                 if new_funds < 0:
                     continue
-                cmd = "update users set available_funds = "+new_funds+" where id ="+str(b[1])+';'
+                cmd = "update users set available_funds = "+str(new_funds)+" where id ="+str(b[1])+';'
                 c.execute(cmd)
                 r = c.fetchall()
                 # update stock price
-                unallocated =int(r[0][4]) - int(b[8]) + int(b[9])
-                cmd="update stocks set price = "+str(b[7])+",unallocated="+str(unallocated)+" where id="+str(stock_id)+";"
+                unallocated = volume_left
+                cmd="update stocks set price = "+str(price)+",unallocated="+str(unallocated)+" where id="+str(stock_id)+";"
                 c.execute(cmd)
                 r = c.fetchall()
                 # change user holdings
                 cmd = 'select volume from holdings where user_id='+str(user_id)+' AND stock_id='+str(stock_id)+";"
                 c.execute(cmd)
                 r = c.fetchall()
-                old_volume = int(r[0][0])
-                new_volume = old_volume + volume_to_execute
-                cmd = "update holdings set bought_on="+str(time.strftime('%Y-%m-%d'))+",price="+str(price)+"volume="+new_volume+" WHERE user_id="+str(user_id) + \
+                if len(r) == 0:
+                    # get number of holdings
+                    cmd = 'select count(*) from holdings;'
+                    r = c.execute(cmd)
+                    r = c.fetchall()
+                    cnt_holdings = str(r[0][0])
+                    new_volume = volume_to_execute
+                    cmd = "insert holdings values("+str(user_id)+", "+str(stock_id)+", "+str(time.strftime('%Y-%m-%d')) + \
+                            ", "+str(new_volume)+", "+str(price)+", "+cnt_holdings+")"
+                else:
+                    old_volume = int(r[0][0])
+                    new_volume = old_volume + volume_to_execute
+                    cmd = "update holdings set bought_on="+str(time.strftime('%Y-%m-%d'))+",bld_price="+str(price)+",volume="+str(new_volume)+" WHERE user_id="+str(user_id) + \
                         " AND stock_id="+str(stock_id)+";"
                 c.execute(cmd)
                 # change order executed volume
-                cmd = 'update orders set executed_volume='+b[8]+' WHERE id='+str(order_id)+';'
+                cmd = 'update orders set executed_volume='+str(b[8])+' WHERE id='+str(order_id)+';'
                 db.commit()
             else:
                 # partial transaction
