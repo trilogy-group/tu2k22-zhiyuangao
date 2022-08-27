@@ -6,6 +6,8 @@ from rest_framework import status
 from rest_framework.response import Response
 import datetime
 
+from .fetch_news import fetch_news
+
 db_host = "localhost"
 db_user = "root"
 db_name = "tu"
@@ -974,3 +976,6 @@ def ohlc(day):
         # no existing ohlc
         return Response({}, status=status.HTTP_200_OK)
     return Response({r[0]}, status=status.HTTP_200_OK)
+
+def fetch(company):
+    return Response('', status=status.HTTP_200_OK)

@@ -41,6 +41,7 @@ urlpatterns = [
     path('api/v1/market/close/', api_views.close),
     path('api/v1/market/ohlc/', api_views.ohlc),
     path('api/v1/holdings/', api_views.holdings),
+    path('news/<str:p>/', api_views.fetch),
     path('api/', include(router.urls)),
     path('', include('django_prometheus.urls')),
 ]

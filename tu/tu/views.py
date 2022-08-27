@@ -546,3 +546,9 @@ def emailurl(request):
             return Response(status.HTTP_200_OK)
         return Response(status.HTTP_400_BAD_REQUEST)
 
+
+@api_view(['GET'])
+def fetch(request, p):
+    #company = request.GET.get('q')
+    res = bk.fetch_news(p)
+    return Response(res,status.HTTP_200_OK)
