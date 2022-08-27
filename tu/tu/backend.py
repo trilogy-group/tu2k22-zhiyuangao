@@ -13,6 +13,7 @@ password = "Ab_19100204"
 port = 3306
 login_session = {}
 connect_pool=[]
+MARKET_STATUS=False
 
 class Session:
     def __init__(self, email, token, db_entry_in_users):
@@ -747,6 +748,12 @@ def match():
 
 
 def openMarket():
+    MARKET_STATUS = True
+    return Response({}, status=status.HTTP_200_OK)
+
+
+def closeMarket():
+    MARKET_STATUS = False
     return Response({}, status=status.HTTP_200_OK)
 
 
@@ -935,3 +942,35 @@ def processLogs(files, poolsize):
       res = mergeQueue(list(unmerged))
 
     return Response(res, status=status.HTTP_200_OK)
+
+def holdings(token):
+    # Authenticate token
+    print("Authenticate token")
+    try:
+        user_session = login_session[token]
+    except Exception as e:
+        print(e)
+        return Response('wrong token', status=status.HTTP_401_UNAUTHORIZED)
+
+    user_id = user_session.data['id']
+    db = get_connect()
+    c = db.cursor() 
+    cmd = "select * from holdings where user_id="+str(user_id)+';'
+    c.execute(cmd)
+    r = c.fetchall()
+    if len(r) == 0:
+        # no existing holdings
+        return Response({}, status=status.HTTP_200_OK)
+    else:
+        return Response({r[0]}, status=status.HTTP_200_OK)
+
+def ohlc(day):
+    db = get_connect()
+    c = db.cursor()
+    cmd = "select * from orders where updated_at="+str(day)+';'
+    c.execute(cmd)
+    r = c.fetchall()
+    if len(r) == 0:
+        # no existing ohlc
+        return Response({}, status=status.HTTP_200_OK)
+    return Response({r[0]}, status=status.HTTP_200_OK)

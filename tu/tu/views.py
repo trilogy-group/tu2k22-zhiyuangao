@@ -416,6 +416,73 @@ def open(request):
     return res
 
 
+
+@api_view(['POST'])
+def close(request):
+    logging.info('\n\n---- OPEN ---- ')
+    try:
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+        if token == None:
+            raise Exception
+        logging.debug('GOT Token')
+    except Exception as e:
+        logging.debug('No Token')
+        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+
+    res = bk.closeMarket()
+    return res
+
+
+@api_view(['POST'])
+def open(request):
+    logging.info('\n\n---- OPEN ---- ')
+    try:
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+        if token == None:
+            raise Exception
+        logging.debug('GOT Token')
+    except Exception as e:
+        logging.debug('No Token')
+        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+
+    res = bk.openMarket()
+    return res
+
+
+@api_view(['GET'])
+def ohlc(request):
+    logging.info('\n\n---- OPEN ---- ')
+    try:
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+        if token == None:
+            raise Exception
+        logging.debug('GOT Token')
+    except Exception as e:
+        logging.debug('No Token')
+        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+
+    day = request.GET.get('day')
+    res = bk.ohlc(day)
+    return res
+
+
+@api_view(['GET'])
+def holdings(request):
+    logging.info('\n\n---- OPEN ---- ')
+    try:
+        token = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+        if token == None:
+            raise Exception
+        logging.debug('GOT Token')
+    except Exception as e:
+        logging.debug('No Token')
+        return Response("Need token to proceed", status=status.HTTP_400_BAD_REQUEST)
+
+    res = bk.holdings(token)
+    return res
+
+
+
 @api_view(['GET','POST'])
 def githublogin(request):
         code = request.GET.get('code')

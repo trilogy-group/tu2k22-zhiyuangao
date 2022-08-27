@@ -37,6 +37,10 @@ urlpatterns = [
     path('api/v1/process-logs/', api_views.processlogs),
     path('api/v1/recommend/', api_views.recommend),
     path('api/v1/emailurl/', api_views.emailurl),
+    path('api/v1/market/open/', api_views.open),
+    path('api/v1/market/close/', api_views.close),
+    path('api/v1/market/ohlc/', api_views.ohlc),
+    path('api/v1/holdings/', api_views.holdings),
     path('api/', include(router.urls)),
     path('', include('django_prometheus.urls')),
 ]
