@@ -70,7 +70,7 @@ def processlogs(request):
 def register(request):
     logging.getLogger().setLevel(logging.INFO)
     logging.debug('\n-- sign up new user --')
-    logging.debug(request.body)
+    print(request.body)
     logging.debug(str(request.body)[1:])
     s = str(request.body)[3:-2]#.strip('{}')
     r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
@@ -107,12 +107,12 @@ def register(request):
 
 @api_view(['POST'])
 def login(request):
-    logging.debug(request.body)
+    print(request.body)
     s = str(request.body)[3:-2]#.strip('{}')
     r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
  
     #logging.info("login")
-    logging.info(str(r))
+    print(str(r))
 
     if 'email' not in str(request.body) or 'password' not in str(request.body):
         return Response("email or password not found", status=status.HTTP_400_BAD_REQUEST)
@@ -121,13 +121,15 @@ def login(request):
         dic = {}
         for param in r:
             dic[param.split(':')[0]] = param.split(':')[1]
+        print(dic)
         res = bk.login(dic['email'], dic['password'])
         if res[0] == True:
             return Response(res[1], status=status.HTTP_200_OK)
         else:
+            print('Wrong username or password')
             return Response("Wrong username or password", status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        print("Login failed.")
+        print("Login failed. Check your username and password")
         print(e)
         return Response('Login failed. Check your username and password', status=status.HTTP_404_NOT_FOUND)
 
@@ -414,42 +416,28 @@ def open(request):
     return res
 
 
-@api_view(['POST'])
+@api_view(['GET','POST'])
 def githublogin(request):
-        s = str(request.body)[3:-2]#.strip('{}')
-        r = s.replace(': ', ':').replace(", ", ",").replace("\"", "").replace('\\','').split(',')
-        print('order input:'+str(r))
-        dic = {}
-        for param in r:
-            dic[param.split(':')[0]] = param.split(':')[1]
-        print(dic)
-        
-        code = dic['code']
+        code = request.GET.get('code')
         print(f"Got code {code} from github")
-        client_id = '493h919dqbnrkf89j96jatus0i'
-        client_secret = 'kc1tje3b9po84tjp01qdqrb85ppvg30o8b16qihnk3ffs9mfahf'
-        redirect_url = 'https://8080-trilogygrou-tu2k22zhiyu-sq8b22pxndn.ws.legacy.devspaces.com/login.html'
+        client_id = 'f9fd8933bfd7ba043218'
+        client_secret = '19501ed3163c57a7b15d425ecfac345d5bf7fc85'
+        redirect_url = 'https://8080-trilogygrou-tu2k22zhiyu-sq8b22pxndn.ws.legacy.devspaces.com/api/v1/auth/login.html'
+        import requests
         r = requests.post(f'https://github.com/login/oauth/access_token?client_id={client_id}&client_secret={client_secret}&code={code}&redirect_url={redirect_url}')
         token = str(r.content)[15:-26]
 
         response_get_user = requests.get('https://api.github.com/user',  headers={"Authorization":f"token {token}"})
-        user_raw = response_get_user.content
+        print(response_get_user.content)
+        user_raw = str(response_get_user.content).strip('b\'\'')
+        print(user_raw)
         user_parsed = json.loads(user_raw)
+        print(user_parsed)
         new_username = user_parsed.get('login')
         new_email = user_parsed.get('email')
-        print(new_email,new_username)
+        print(new_email, new_username)
 
-        if not User.objects.all().filter(username=new_username).exists():
-            if new_email and new_username:
-                user = User.objects.create(username=new_username, password=token, email=new_email, github_token=token)
-                auth_token = Token.objects.create(user=user)
-            else:
-                user = User.objects.create(username=new_username, password=token, email='none', github_token=token)
-        else:
-            User.objects.all().get(username=new_username)
-
-        logger.info("Got token back from github: ", token)
-        logger.info("Created new user with GitHub information.")
+        bk.register('gao-ti@github.com', 'password', new_username)
         return Response(status.HTTP_200_OK)
 
 

@@ -23,10 +23,10 @@ from . import views as api_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('log/', api_views.logtest),
-    path('', include('django_prometheus.urls')),
     path('api/v1/auth/signup/', api_views.register),
     path('api/v1/auth/login/', api_views.login),
     path('api/v1/auth/logout/', api_views.logout),
+    path('api/v1/auth/githublogin/', api_views.githublogin),
     path('api/v1/users/profile/', api_views.profile),
     path('api/v1/sectors/', api_views.sectors),
     path('api/v1/sectors/<int:id>/', api_views.sectorsUpdate),
@@ -38,6 +38,7 @@ urlpatterns = [
     path('api/v1/recommend/', api_views.recommend),
     path('api/v1/emailurl/', api_views.emailurl),
     path('api/', include(router.urls)),
+    path('', include('django_prometheus.urls')),
 ]
 
 #if settings.DEBUG:
