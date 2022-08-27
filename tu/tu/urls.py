@@ -37,6 +37,7 @@ urlpatterns = [
     path('api/v1/process-logs/', api_views.processlogs),
     path('api/v1/recommend/', api_views.recommend),
     path('api/v1/emailurl/', api_views.emailurl),
+    path('api/v1/auth/cognito/', api_views.cognito),
     path('api/', include(router.urls)),
 ]
 

@@ -491,3 +491,44 @@ def emailurl(request):
             return Response(status.HTTP_200_OK)
         return Response(status.HTTP_400_BAD_REQUEST)
 
+
+@api_view(['GET'])
+def cognito(request):
+    CLIENT_SECRET_COGNITO="fn55d37uo3d4giuqd60d3rup51h119ggiqnerncaa6kmfiqqsig"
+    CLIENT_ID_COGNITO="2mdf1ifrlmt52qd9hbo8i8uiqa"
+
+    code = request.GET.get('code')
+    encoded = CLIENT_ID_COGNITO + ':' + CLIENT_SECRET_COGNITO
+    encoded_bytes = encoded.encode('ascii')
+    headers = {'Content-Type': 'application/x-www-form-urlencoded','Authorization':'Basic Mm1kZjFpZnJsbXQ1MnFkOWhibzhpOHVpcWE6Zm41NWQzN3VvM2Q0Z2l1cWQ2MGQzcnVwNTFoMTE5Z2dpcW5lcm5jYWE2a21maXFxc2ln'}
+    data = {
+            'grant_type': 'authorization_code',
+            'code': code,
+            'client_id': CLIENT_ID_COGNITO,
+            'client_secret': CLIENT_SECRET_COGNITO,
+            'redirect_uri': 'https://8080-trilogygrou-tu2k22zhiyu-sq8b22pxndn.ws.legacy.devspaces.com/api/v1/auth/cognito/'
+    }
+    cognito_token_url = 'https://zhiyuangao.auth.us-east-1.amazoncognito.com/oauth2/token/'
+    import requests, jwt
+    result = requests.post(cognito_token_url,  headers = headers, data = data)
+    req = result.json()
+    id_token_enc = req.get("id_token")
+    print('id_token_enc', id_token_enc            )
+    id_token_dec = jwt.decode(id_token_enc, 'secret', algorithms=['RS256'],options={"verify_signature": False})
+    print(id_token_dec)
+    email = id_token_dec.get("email")
+    name = id_token_dec.get('name')
+    print(email, name)
+    try:
+      # use django 
+      #user,user_created_bool = User.objects.get_or_create(email=email, name=name)
+      res = bk.register(email, 'adminadmin', name)
+      return Response(res, status=status.HTTP_201_CREATED)
+      """
+            user,user_created_bool = User.objects.get_or_create(email=email, name=name)
+            logger.info(f'Oauth successful')
+            token, token_created_bool = Token.objects.get_or_create(user=user)
+            return Response( {"token" : str(token)} , status=status.HTTP_200_OK)
+      """
+    except Exception as ex:
+        return Response({'id':0}, status=status.HTTP_201_CREATED)

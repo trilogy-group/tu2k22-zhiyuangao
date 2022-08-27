@@ -10,5 +10,5 @@ opentelemetry-exporter-jaeger
 opentelemetry-exporter-otlp
 opentelemetry-instrumentation-logging
 cryptography
-drf-jwt
 locust
+jwt
