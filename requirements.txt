@@ -1,0 +1,15 @@
+django
+django-prometheus
+djangorestframework
+opentelemetry-sdk
+opentelemetry-api
+opentelemetry-instrumentation
+opentelemetry-instrumentation-django
+mysqlclient
+opentelemetry-exporter-jaeger
+opentelemetry-exporter-otlp
+opentelemetry-instrumentation-logging
+cryptography
+drf-jwt
+locust
+elasticsearch

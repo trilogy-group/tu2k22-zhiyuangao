@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: tu2k22
+  name: zhiyuan-ingress-clusterip
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP":80}, {"HTTPS":8000}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:280022023954:certificate/24730ea7-b545-4a72-97fa-bbab39ef3b1f
+    external-dns.alpha.kubernetes.io/hostname: zyn-k8s.tu2k22.devfactory.com
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/sectors
+
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: zhiyuan-django
+              port:
+                number: 8000

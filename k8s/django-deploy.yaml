@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: tu2k22
+  name: zhiyuan-django-new
+  labels:
+    app: zhiyuan-django
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: zhiyuan-django
+  template:
+    metadata:
+      labels:
+        app: zhiyuan-django
+    spec:
+      containers:
+        - image: '280022023954.dkr.ecr.us-east-1.amazonaws.com/tu2k22-syedmujtabajafri-wallstreet-deploy-track:latest'
+          name: zhiyuan-django
+          ports:
+            - containerPort: 8000
+              name: django
+          resources:
+            requests:
+              cpu: '250m'
